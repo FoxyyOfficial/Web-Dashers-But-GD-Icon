@@ -1191,16 +1191,28 @@ window.LevelObject = class LevelObject {
             if (_nr === 90) { const _t = _fx; _fx = !_fy; _fy = _t; }
             else if (_nr === 180) { _fx = !_fx; _fy = !_fy; }
             else if (_nr === 270) { const _t = _fx; _fx = _fy; _fy = !_t; }
-            let _slopeCol = new Collider(slopeType, worldX, worldY, _0x10e5ae, _0x11e08d, levelObj.rot || 0);
-            _slopeCol.slopeDir = _fx ? -1 : 1;
-            _slopeCol.slopeFlipY = _fy;
-            _slopeCol.slopeFloorTop = _fy;
-            _slopeCol.slopeAngleDeg = _SLOPE_DATA[levelObj.id].angle || 45;
-            _slopeCol.slopeIsFilled = _SLOPE_DATA[levelObj.id].sq || false;
-            _slopeCol.objid = levelObj.id;
-            _registerCollider(_slopeCol);
-            this.objects.push(_slopeCol);
-            this._addCollisionToSection(_slopeCol);
+            const _slopeDir = _fx ? -1 : 1;
+            const _coveredBySlope = this.objects.some(col =>
+              col.type === slopeType &&
+              Math.abs(col.x - worldX) < 0.01 &&
+              Math.abs(col.y - worldY) < 0.01 &&
+              col.slopeDir === _slopeDir &&
+              col.slopeFlipY === _fy &&
+              col.w >= _0x10e5ae - 1 &&
+              col.h >= _0x11e08d - 1
+            );
+            if (!_coveredBySlope) {
+              let _slopeCol = new Collider(slopeType, worldX, worldY, _0x10e5ae, _0x11e08d, levelObj.rot || 0);
+              _slopeCol.slopeDir = _slopeDir;
+              _slopeCol.slopeFlipY = _fy;
+              _slopeCol.slopeFloorTop = _fy;
+              _slopeCol.slopeAngleDeg = _SLOPE_DATA[levelObj.id].angle || 45;
+              _slopeCol.slopeIsFilled = _SLOPE_DATA[levelObj.id].sq || false;
+              _slopeCol.objid = levelObj.id;
+              _registerCollider(_slopeCol);
+              this.objects.push(_slopeCol);
+              this._addCollisionToSection(_slopeCol);
+            }
           } else {
             let _0x4628ff = new Collider(solidType, worldX, worldY, _0x10e5ae, _0x11e08d, levelObj.rot || 0);
             _0x4628ff.objid = levelObj.id;

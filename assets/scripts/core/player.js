@@ -1186,6 +1186,9 @@ if (this.p.isFlying || this.p.isUfo) {
     if (this.p.isDead) {
       return;
     }
+    if (window.debugCollisions && this._lastDeathReason) {
+      console.log("death reason", this._lastDeathReason);
+    }
     this.p.isDead = true;
     this._scene.toggleGlitter(false);
     this._particleEmitter.stop();
@@ -1933,6 +1936,9 @@ _updateBallJump(_0x2fe319) {
     let _0x30410f = false;
     let _boostedThisStep = false;
     const _0x198534 = this._gameLayer.getNearbySectionObjects(pieceWidth);
+    let _floorSlopeHit = null;
+    let _ceilingSlopeHit = null;
+    let _slopeDeath = null;
     for (let gameObj of _0x198534) {
       let left = gameObj.x - gameObj.w / 2;
       let right = gameObj.x + gameObj.w / 2;
@@ -2360,6 +2366,7 @@ _updateBallJump(_0x2fe319) {
             const _hMinDist = gameObj.hitbox_radius + (this.p.isWave ? waveHitSize : playerSize);
             if (_hDistSq > _hMinDist * _hMinDist) continue;
           }
+          this._lastDeathReason = { reason: "hazard", objid: gameObj.objid, type: gameObj.type, playerX: pieceWidth, playerY: playersY, objX: gameObj.x, objY: gameObj.y };
           this.killPlayer();
           return;
         } else if (_colType === solidType) {
@@ -2387,7 +2394,9 @@ _updateBallJump(_0x2fe319) {
           const isstandingOnAPlatform = this.p.gravityFlipped ? _0xLandTop : _0xLandBot;
           if (iscolliding && !isstandingOnAPlatform) {
             if (window.noClip) this.p.diedThisFrame = true;
+            if (gameObj.h <= 4 || gameObj.w <= 4) continue;
             if (window.noClip || gameObj.objid === 143) continue
+            this._lastDeathReason = { reason: "solid-side", objid: gameObj.objid, type: gameObj.type, playerX: pieceWidth, playerY: playersY, objX: gameObj.x, objY: gameObj.y, left, right, top, bottom };
             this.killPlayer();
             return;
           }
@@ -2442,6 +2451,7 @@ _updateBallJump(_0x2fe319) {
               if (iscolliding) {
                 if (window.noClip) this.p.diedThisFrame = true;
                 if (window.noClip || gameObj.objid === 143) continue;
+                this._lastDeathReason = { reason: "solid-head", objid: gameObj.objid, type: gameObj.type, playerX: pieceWidth, playerY: playersY, objX: gameObj.x, objY: gameObj.y, left, right, top, bottom };
                 this.killPlayer();
                 return;
               }
@@ -2469,35 +2479,18 @@ _updateBallJump(_0x2fe319) {
               const _playerBot = playersY - _playerRadOnSlope + gamemodeAddition;
               const _lastBot = playersLastY - _playerRadOnSlope + gamemodeAddition;
               if ((_playerBot >= _surfY || _lastBot >= _surfY) && (this.p.yVelocity <= 0 || this.p.onGround)) {
-                this.p.y = _surfY + _playerRadOnSlope;
-                const _oldVel = this.p.yVelocity;
-                this.hitGround();
-                _0x30410f = true;
-                this.p.collideBottom = _surfY;
-                this.p.isOnSlope = true;
-                this.p.currentSlopeAngle = _slopeAngleRad;
-                this.p.currentSlopeDir = gameObj.slopeDir || 1;
-                const _slopeYVel = (gameObj.h * playerSpeed) / gameObj.w;
-                const _slopeVelMult = Math.min(1.12 / Math.max(_slopeAngleRad, 0.01), 1.54);
-                const _slopeDir = gameObj.slopeDir || 1;
-                const _playerUphill = _slopeDir < 0;
-                this.p.slopeVelocity = _slopeVelMult * _slopeYVel * this.flipMod() * (_playerUphill ? -1 : 1);
-                if (!this.p.isFlying) this._checkSnapJump(gameObj);
+                if (!_floorSlopeHit || _surfY > _floorSlopeHit.surfY) {
+                  _floorSlopeHit = { obj: gameObj, surfY: _surfY, playerRad: _playerRadOnSlope, angle: _slopeAngleRad };
+                }
                 continue;
               }
             } else {
               const _playerTop = playersY + _playerRadOnSlope - gamemodeAddition;
               const _lastTop = playersLastY + _playerRadOnSlope - gamemodeAddition;
               if ((_playerTop <= _surfY || _lastTop <= _surfY) && (this.p.yVelocity >= 0 || this.p.onGround)) {
-                this.p.y = _surfY - _playerRadOnSlope;
-                this.hitGround();
-                _0x30410f = true;
-                this.p.onCeiling = true;
-                this.p.collideTop = _surfY;
-                this.p.isOnSlope = true;
-                this.p.currentSlopeAngle = _slopeAngleRad;
-                this.p.currentSlopeDir = gameObj.slopeDir || 1;
-                if (!this.p.isFlying) this._checkSnapJump(gameObj);
+                if (!_ceilingSlopeHit || _surfY < _ceilingSlopeHit.surfY) {
+                  _ceilingSlopeHit = { obj: gameObj, surfY: _surfY, playerRad: _playerRadOnSlope, angle: _slopeAngleRad };
+                }
                 continue;
               }
             }
@@ -2507,12 +2500,45 @@ _updateBallJump(_0x2fe319) {
               const _inside = _slopeUpsideDown ? (playersY + 9 > _surfY) : (playersY - 9 < _surfY);
               if (_inside) {
                 if (window.noClip) { this.p.diedThisFrame = true; continue; }
-                if (gameObj.objid !== 143) { this.killPlayer(); return; }
+                if (gameObj.objid !== 143) {
+                  _slopeDeath = { reason: "slope-inside", objid: gameObj.objid, type: gameObj.type, playerX: pieceWidth, playerY: playersY, objX: gameObj.x, objY: gameObj.y, left, right, top, bottom, surfY: _surfY };
+                }
               }
             }
           }
         }
       }
+    }
+    if (_floorSlopeHit) {
+      const gameObj = _floorSlopeHit.obj;
+      this.p.y = _floorSlopeHit.surfY + _floorSlopeHit.playerRad;
+      this.hitGround();
+      _0x30410f = true;
+      this.p.collideBottom = _floorSlopeHit.surfY;
+      this.p.isOnSlope = true;
+      this.p.currentSlopeAngle = _floorSlopeHit.angle;
+      this.p.currentSlopeDir = gameObj.slopeDir || 1;
+      const _slopeYVel = (gameObj.h * playerSpeed) / gameObj.w;
+      const _slopeVelMult = Math.min(1.12 / Math.max(_floorSlopeHit.angle, 0.01), 1.54);
+      const _slopeDir = gameObj.slopeDir || 1;
+      const _playerUphill = _slopeDir < 0;
+      this.p.slopeVelocity = _slopeVelMult * _slopeYVel * this.flipMod() * (_playerUphill ? -1 : 1);
+      if (!this.p.isFlying) this._checkSnapJump(gameObj);
+    } else if (_ceilingSlopeHit) {
+      const gameObj = _ceilingSlopeHit.obj;
+      this.p.y = _ceilingSlopeHit.surfY - _ceilingSlopeHit.playerRad;
+      this.hitGround();
+      _0x30410f = true;
+      this.p.onCeiling = true;
+      this.p.collideTop = _ceilingSlopeHit.surfY;
+      this.p.isOnSlope = true;
+      this.p.currentSlopeAngle = _ceilingSlopeHit.angle;
+      this.p.currentSlopeDir = gameObj.slopeDir || 1;
+      if (!this.p.isFlying) this._checkSnapJump(gameObj);
+    } else if (_slopeDeath) {
+      this._lastDeathReason = _slopeDeath;
+      this.killPlayer();
+      return;
     }
     if (this.p.collideTop !== 0 && this.p.collideBottom !== 0) {
       if (Math.abs(this.p.collideTop - this.p.collideBottom) < 48) {
