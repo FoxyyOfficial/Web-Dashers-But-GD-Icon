@@ -2062,6 +2062,402 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         }
       });
     };
+    this._openVaultMenu = () => {
+      if (this.spookybadmenu) return;
+
+      const sw = screenWidth;
+      const sh = screenHeight;
+      const cx = sw * 0.5;
+      const cy = sh * 0.5;
+
+      const overlay = this.add.container(0, 0).setDepth(310).setScrollFactor(0).setAlpha(0);
+      const overlayDestroy = overlay.destroy.bind(overlay);
+
+      const bg = this.add.image(cx, cy, "vaultBg").setDisplaySize(sw, sh).setScrollFactor(0).setDepth(311).setOrigin(0.5);
+
+      const backBtn = this.add.image(50, 50, "GJ_GameSheet03", "GJ_arrow_01_001.png")
+        .setScrollFactor(0)
+        .setDepth(315)
+        .setScale(1.05)
+        .setInteractive();
+
+      const titleText = this.add.bitmapText(cx, sh * 0.08, "goldFont", "The Vault", 50)
+        .setOrigin(0.5)
+        .setDepth(325)
+        .setTint(0xfff8a2);
+
+      const subtitleMessages = [
+        "Don't touch!",
+        "Just, stop.",
+        "No one seems to be home.",
+        "zzzZZZ...",
+        "Go away!",
+        "No!",
+        "It's a secret...",
+        "Stop it!",
+        "Not allowed!",
+        "Why u click?",
+        "Nothing to see here...",
+        "This message is for testing...",    
+      ];
+      const subtitleText = this.add.bitmapText(cx, sh * 0.21, "bigFont", subtitleMessages[Math.floor(Math.random() * subtitleMessages.length)], 36)
+        .setOrigin(0.5)
+        .setDepth(315)
+        .setTint(0xffffff);
+
+      const inputWidth = sw * 0.38;
+      const inputHeight = 98;
+      const inputY = sh * 0.33;
+      const inputBox = this.add.graphics()
+        .fillStyle(0x000000, 0.45)
+        .fillRoundedRect(cx - inputWidth * 0.5, inputY - inputHeight * 0.5, inputWidth, inputHeight, 13)
+        .setDepth(315);
+
+      const placeholderLabel = this.add.bitmapText(cx, inputY, "bigFont", "...", 44)
+        .setOrigin(0.5)
+        .setDepth(315)
+        .setTint(0x44c7c7)
+        .setAlpha(0.9);
+
+      const typedLabel = this.add.bitmapText(cx, inputY, "bigFont", "", 44)
+        .setOrigin(0.5)
+        .setDepth(315)
+        .setTint(0xffffff)
+        .setVisible(false);
+
+      const inputCursor = this.add.text(cx + 8, inputY, "|", {
+        fontSize: "44px",
+        fontFamily: "Arial",
+        color: "#44c7c7"
+      }).setOrigin(0, 0.5).setDepth(315).setVisible(false);
+
+      const responseText = this.add.bitmapText(cx, sh * 0.82, "bigFont", "Type a code and press Enter...", 30)
+        .setOrigin(0.5)
+        .setDepth(315)
+        .setTint(0xdcdcff);
+
+      let secretPlayButton = null;
+      let secretPlayLabel = null;
+      let secretSubtitleIndex = 0;
+      const secretPlaySubtitles = [
+        "That level is still under construction...",
+        "Still not available!!!",
+        "Stop trying!!!!!!!!",
+        "Trust me, it'll be better than that Challenge thing!!",
+        "You need be patient... She's not- I mean... Ugh."
+      ];
+      const _brokentrip = () => {
+        if (secretPlayButton) {
+          secretPlayButton.off("pointerup");
+          secretPlayButton.destroy();
+          secretPlayButton = null;
+        }
+        if (secretPlayLabel) {
+          secretPlayLabel.destroy();
+          secretPlayLabel = null;
+        }
+      };
+
+      const _flashbang = () => {
+        const flash = this.add.graphics().setScrollFactor(0).setDepth(330);
+        flash.fillStyle(0xffffff, 1);
+        flash.fillRect(0, 0, sw, sh);
+        this.tweens.add({
+          targets: flash,
+          alpha: { from: 1, to: 0 },
+          duration: 360,
+          ease: "Linear",
+          onComplete: () => flash.destroy()
+        });
+      };
+
+      const _playsillysound = () => {
+        if (this._audio && typeof this._audio.playEffect === "function") {
+          this._audio.playEffect("highscoreGet02");
+        } else if (this.sound) {
+          try {
+            this.sound.play("highscoreGet02");
+          } catch (e) {}
+        }
+      };
+
+      const _bowertrip = () => {
+        _brokentrip();
+        const buttonX = sw - 140;
+        const buttonY = sh - 130;
+
+        secretPlayLabel = this.add.bitmapText(buttonX, buttonY - 110, "bigFont", "Power Trip", 40)
+          .setOrigin(0.5)
+          .setDepth(316)
+          .setTint(0xffffff);
+
+        secretPlayButton = this.add.image(buttonX, buttonY, "GJ_GameSheet03", "GJ_playBtn2_001.png")
+          .setScrollFactor(0)
+          .setDepth(316)
+          .setScale(0.85)
+          .setOrigin(0.5)
+          .setAngle(90)
+          .setFlipY(true)
+          .setInteractive();
+        this._makeBouncyButton(secretPlayButton, 0.95, () => {
+          subtitleText.setText(secretPlaySubtitles[secretSubtitleIndex]);
+          secretSubtitleIndex = (secretSubtitleIndex + 1) % secretPlaySubtitles.length;
+        });
+
+        overlay.add([secretPlayLabel, secretPlayButton]);
+      };
+
+      const lockSprite = this.add.image(cx, sh * 0.56, "secretLock_01")
+        .setScrollFactor(0)
+        .setDepth(315)
+        .setScale(1)
+        .setInteractive();
+
+      const codeResponses = {
+        amethyst: "Fine, Fine. Take this level and leave!!!",
+        spooky: "WHAT!? How did you know my name!?!",
+        sparky: "My coin... NOO!!... Wait- Nevermind. It's right here.",
+        robotop: "So he told you?...",
+        lenny: "Noooooo!!!!",
+        blockbite: "How do you know my secrets!?",
+        mule: "Ah, right you are.",
+        ahead: "You learn quickly!",
+        gandalfpotter: "That was weird...",
+        neverending: "You're pretty good at this",
+        finalboss: "Maybe Rub should add some of these",
+        messycodelolz: "Stop looking through the awful code!!!",
+        nyaw: "...Excuse me?!",
+        fade: "Amethyst doesn't know how fade animations work.",
+        alwaysending: "Achievement? What achievement?"
+      };
+      const spookysays = [  
+        "How did you get in here?!", 
+        "You're here for my gold, aren't you?",
+        "I had a secret coin once",
+        "It was so beautiful",
+        "I called it, Sparky", 
+        "...",
+        "What are you poking around for?", 
+        "Don't you have better things to do?", 
+        "There is no spoon", 
+        "Go away!", 
+        "Don't tell RubRub, but I stole an icon",
+        "He will never notice...",
+        "I hid it with my name as the password",
+        "Muahahaha!",
+        "I should have hid this room better...", 
+        "You're not supposed to be in here...", 
+        "RubRub won't like this...", 
+        "zzzZZZZ...", 
+        "Ok, I will give you a hint.",
+        "Without it, I'm dead.",
+        "If I'm not, then I'm behind.",
+        "What am I?",
+        "That didn't go very well...",
+        "Don't touch that!", 
+        "Why U touch my stuff?", 
+        "RubRub better not find you in here...", 
+        "Can't you just leave?", 
+        "This is not the room you are looking for...", 
+        "Sneaky sneaky...", 
+        "It's my precious...", 
+        "You shall not pass!", 
+        "Don't push the button!", 
+        "You're gonna get me in trouble...", 
+        "This is getting ridiculus...", 
+        "Go collect some stars.", 
+        "Maybe there are new levels?", 
+        "Just, stop bothering me", 
+        "I'm gonna stop talking", 
+        "...", 
+        "......", 
+        "GAH!", 
+        "You're hopeless...", 
+        "Really, still here?", 
+        "Fine, press the button"
+      ];
+      let lockMessageIndex = 0;
+
+      const inputHitZone = this.add.zone(cx, inputY, inputWidth, inputHeight)
+        .setScrollFactor(0)
+        .setDepth(315)
+        .setInteractive();
+
+      let vaultInputText = "";
+      let inputFocused = true;
+      let cursorTimer = null;
+      let whatwasplayingbefore = false;
+
+      const _updateInputDisplay = () => {
+        typedLabel.setText(vaultInputText);
+        const isEmpty = vaultInputText.length === 0;
+        placeholderLabel.setVisible(isEmpty);
+        typedLabel.setVisible(!isEmpty);
+        typedLabel.setTint(isEmpty ? 0x44c7c7 : 0xffffff);
+        inputCursor.setVisible(inputFocused && !isEmpty);
+        inputCursor.x = cx + (isEmpty ? 8 : typedLabel.width * 0.5 + 8);
+      };
+
+      const _startCursorBlink = () => {
+        if (cursorTimer) return;
+        cursorTimer = this.time.addEvent({
+          delay: 500,
+          loop: true,
+          callback: () => {
+            inputCursor.setVisible(!inputCursor.visible);
+          }
+        });
+      };
+
+      const _stopCursorBlink = () => {
+        if (cursorTimer) {
+          cursorTimer.remove();
+          cursorTimer = null;
+        }
+        inputCursor.setVisible(false);
+      };
+
+      const _whatdidplayersay = (value) => {
+        const normalized = value.trim().toLowerCase();
+        if (!normalized) {
+          subtitleText.setText("...");
+          return;
+        }
+        if (codeResponses[normalized]) {
+          subtitleText.setText(codeResponses[normalized]);
+          if (normalized === "amethyst") {
+            _flashbang();
+            _playsillysound();
+            _bowertrip();
+          } else {
+            _brokentrip();
+          }
+        } else {
+          _brokentrip();
+          subtitleText.setText("...");
+        }
+      };
+
+      const _spookytalk = () => {
+        subtitleText.setText(spookysays[lockMessageIndex]);
+        lockMessageIndex = (lockMessageIndex + 1) % spookysays.length;
+      };
+
+      this._makeBouncyButton(lockSprite, 1, () => {
+        _spookytalk();
+      });
+      this._makeBouncyButton(backBtn, 1, () => {
+        this.lessbadmenu();
+      });
+
+      inputHitZone.on("pointerdown", () => {
+        inputFocused = true;
+        _startCursorBlink();
+        _updateInputDisplay();
+      });
+
+      backBtn.on("pointerup", () => {
+        this.lessbadmenu();
+      });
+
+      const _vaultKeyDown = (event) => {
+        if (!this.spookybadmenu || !inputFocused) return;
+        if (event.key === "Escape") {
+          event.stopPropagation();
+          this.lessbadmenu();
+          return;
+        }
+        if (event.key === "Enter") {
+          event.stopPropagation();
+          _whatdidplayersay(vaultInputText);
+          vaultInputText = "";
+          _updateInputDisplay();
+          return;
+        }
+        if (event.key === "Backspace") {
+          event.stopPropagation();
+          vaultInputText = vaultInputText.slice(0, -1);
+          _updateInputDisplay();
+          return;
+        }
+        if (event.key.length === 1) {
+          const allowed = "abcdefghijklmnopqrstuvwxyz0123456789";
+          const char = event.key.toLowerCase();
+          if (allowed.includes(char) && vaultInputText.length < 14) {
+            event.stopPropagation();
+            vaultInputText += char;
+            _updateInputDisplay();
+          }
+        }
+      };
+      window.addEventListener("keydown", _vaultKeyDown, true);
+
+      const _nomorebadmenu = () => {
+        window.removeEventListener("keydown", _vaultKeyDown, true);
+        _stopCursorBlink();
+        _brokentrip();
+        if (this._secretLoopSound) {
+          try {
+            this._secretLoopSound.stop();
+            this._secretLoopSound.destroy();
+          } catch (e) {}
+          this._secretLoopSound = null;
+        }
+        if (overlay) overlayDestroy();
+        this.spookybadmenu = null;
+        if (whatwasplayingbefore && this._audio) {
+          this._audio.startMenuMusic();
+        }
+      };
+
+      if (this._audio) {
+        whatwasplayingbefore = this._audio.isplaying();
+        this._audio.stopMusic();
+      }
+      if (this.cache.audio.exists("secretLoop")) {
+        if (this._secretLoopSound) {
+          try {
+            this._secretLoopSound.stop();
+            this._secretLoopSound.destroy();
+          } catch (e) {}
+        }
+        this._secretLoopSound = this.sound.add("secretLoop", {
+          loop: true,
+          volume: this._audio ? this._audio.getMusicVolume() : 1
+        });
+        this._secretLoopSound.play();
+      }
+
+      overlay.add([bg, backBtn, titleText, subtitleText, inputBox, placeholderLabel, typedLabel, inputCursor, lockSprite, responseText]);
+      overlay._nomorebadmenu = _nomorebadmenu;
+      this.spookybadmenu = overlay;
+      _updateInputDisplay();
+      this.tweens.add({ targets: overlay, alpha: 1, duration: 220, ease: "Linear" });
+    };
+
+    this.lessbadmenu = () => {
+      if (!this.spookybadmenu) return;
+      const overlay = this.spookybadmenu;
+      const sw = screenWidth;
+      const sh = screenHeight;
+      const fadeOut = this.add.graphics().setScrollFactor(0).setDepth(320).setAlpha(0);
+      fadeOut.fillStyle(0x000000, 1);
+      fadeOut.fillRect(0, 0, sw, sh);
+      this.tweens.add({
+        targets: fadeOut,
+        alpha: 1,
+        duration: 180,
+        ease: "Linear",
+        onComplete: () => {
+          if (overlay && overlay._nomorebadmenu) {
+            overlay._nomorebadmenu();
+          } else if (overlay && overlay.destroy) {
+            overlay.destroy();
+          }
+          fadeOut.destroy();
+        }
+      });
+    };
     this._positionMenuItems();
     //icon stuff sequel
     if (this._iconBtn) {
@@ -2156,6 +2552,10 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
     this._escKey.on("down", () => {
       if (this._levelSelectOverlay) {
         this._closeLevelSelect();
+        return;
+      }
+      if (this.spookybadmenu) {
+        this.lessbadmenu();
         return;
       }
       if (this._iconOverlay) {
@@ -3369,6 +3769,7 @@ _buildSettingsPopup() {
       { text: "breadbb, PinkDev, rohanis0000,", scale: 0.7, font: "goldFont" },
       { text: "bog, AntiMatter, arbstro, aloaf", scale: 0.7, font: "goldFont" },
       { text: "Contributors:", scale: 0.9, font: "bigFont" },
+      { text: "(ameth7st:3)", scale: 0.45, font: "goldFont" },
       { text: "t0nchi7 and Lasokar.", scale: 0.7, font: "goldFont" },
       { text: "© 2026 RobTop Games. All rights reserved.", scale: 0.4, font: "Arial", color: 0x000000 },
     ]; 
@@ -3674,6 +4075,9 @@ _buildSettingsPopup() {
       { text: "Bug fixes.", scale: 0.65 },
       { text: "is this update finally out?", scale: 0.65, color: 0xaaddff },
       { text: "- rohanis0000", scale: 0.65, color: 0xaaddff },
+      { text: "nope. also uhh-", scale: 0.65, color: 0xaaddff },
+      { text: "-god i hope this doesnt break anything...", scale: 0.65, color: 0xaaddff },
+      { text: "- ameth7st", scale: 0.65, color: 0xaaddff },
     ]; 
     let yPos = 0;
     const lineItems = [];

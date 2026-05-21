@@ -273,6 +273,8 @@ class BootScene extends Phaser.Scene {
       this.load.image("GJ_moveBtn", "assets/sprites/GJ_moveBtn.png");
       this.load.image("GJ_moveSBtn", "assets/sprites/GJ_moveSBtn.png");
       this.load.image("slidergroove2", "assets/sprites/slidergroove2.png");
+      this.load.image("secretLock_01", "assets/sprites/GJ_secretLock_001.png");
+      this.load.image("vaultBg", "assets/sprites/Vault.png");
 
       for (let i = 1; i < 23; i++) {
         let index = i - 1;
@@ -292,6 +294,7 @@ class BootScene extends Phaser.Scene {
 
       this.load.audio("menu_music", "assets/music/menuLoop.mp3");
       this.load.audio("StayInsideMe", "assets/music/StayInsideMe.mp3");
+      this.load.audio("secretLoop", "assets/music/secretLoop.mp3");
 
       for (const lvlarray of window.allLevels) {
         this.load.text(lvlarray[2], "assets/levels/" + lvlarray[2].split("_")[1] + ".txt");
