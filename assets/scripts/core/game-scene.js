@@ -1215,8 +1215,8 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       gfx.fillStyle(panelColor, panelAlpha);
       gfx.fillRoundedRect(panelLeft, qsPanelY, panelW, qsPanelH, panelRadius);
 
-      // --- Quick Search buttons (3 cols x 3 rows, last row 2 centered) ---
-      // Uses real in-game search icon sprites from GJ_GameSheet03
+      // --- Quick Search buttons (3 cols x 3 rows) ---
+      // Container-based so icon+label bounce together with no desync
       const _qsSearchObjects = [];
       const _qsBtnDefs = [
         { label: "Downloads", icon: "GJ_sDownloadIcon_001.png" },
@@ -1230,11 +1230,15 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         { label: "More",      icon: null                       },
       ];
       const _qsCols = 3;
-      const _qsBtnW = panelW * 0.28;
-      const _qsBtnH = _qsBtnW * (64 / 209); // longBtn aspect ratio from GJ sheets
+      // longBtn01 native size: 184x61
+      const _qsBtnW = panelW * 0.285;
+      const _qsBtnH = _qsBtnW * (61 / 184);
       const _qsGapX = (panelW - _qsCols * _qsBtnW) / (_qsCols + 1);
       const _qsRows = Math.ceil(_qsBtnDefs.length / _qsCols);
       const _qsGapY = (qsPanelH - _qsRows * _qsBtnH) / (_qsRows + 1);
+      const _qsBtnScaleX = _qsBtnW / 184;
+      const _qsBtnScaleY = _qsBtnH / 61;
+      const _qsBtnScale  = Math.max(_qsBtnScaleX, _qsBtnScaleY);
 
       _qsBtnDefs.forEach((def, idx) => {
         const col = idx % _qsCols;
@@ -1242,78 +1246,131 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         const bx = panelLeft + _qsGapX + col * (_qsBtnW + _qsGapX) + _qsBtnW / 2;
         const by = qsPanelY + _qsGapY + row * (_qsBtnH + _qsGapY) + _qsBtnH / 2;
 
-        // Green long button background
-        const btnBg = this.add.image(bx, by, "GJ_GameSheet03", "GJ_longBtn01_001.png")
-          .setScrollFactor(0).setDepth(106).setOrigin(0.5, 0.5).setInteractive();
-        const bgNatW = btnBg.width, bgNatH = btnBg.height;
-        const btnScaleX = _qsBtnW / bgNatW;
-        const btnScaleY = _qsBtnH / bgNatH;
-        btnBg.setScale(btnScaleX, btnScaleY);
+        // Use a container so everything bounces as one unit
+        const container = this.add.container(bx, by).setScrollFactor(0).setDepth(106);
 
-        // Icon (if any) to the left of label
-        let iconImg = null;
+        const btnBg = this.add.image(0, 0, "GJ_GameSheet03", "GJ_longBtn01_001.png")
+          .setOrigin(0.5, 0.5).setScale(_qsBtnScaleX, _qsBtnScaleY);
+        container.add(btnBg);
+
         if (def.icon) {
-          iconImg = this.add.image(bx - _qsBtnW * 0.26, by, "GJ_GameSheet03", def.icon)
-            .setScrollFactor(0).setDepth(107).setOrigin(0.5, 0.5);
-          const iconTargetH = _qsBtnH * 0.65;
-          iconImg.setScale(iconTargetH / iconImg.height);
-          _qsSearchObjects.push(iconImg);
+          // Use displayWidth/displayHeight after setScale so rotation doesn't matter
+          const iconImg = this.add.image(-_qsBtnW * 0.28, 0, "GJ_GameSheet03", def.icon)
+            .setOrigin(0.5, 0.5);
+          const iconTargetH = _qsBtnH * 0.68;
+          // displayHeight accounts for Phaser's internal atlas rotation correction
+          iconImg.setScale(iconTargetH / iconImg.displayHeight);
+          container.add(iconImg);
         }
 
-        // Label text
-        const lbl = this.add.bitmapText(def.icon ? bx + _qsBtnW * 0.06 : bx, by, "bigFont", def.label, 22)
-          .setScrollFactor(0).setDepth(107).setOrigin(0.5, 0.5).setTint(0xffffff);
+        const lblX = def.icon ? _qsBtnW * 0.07 : 0;
+        const lbl = this.add.bitmapText(lblX, 0, "bigFont", def.label, 20)
+          .setOrigin(0.5, 0.5).setTint(0xffffff);
+        container.add(lbl);
 
-        this._makeBouncyButton(btnBg, Math.max(btnScaleX, btnScaleY), () => {});
-        _qsSearchObjects.push(btnBg, lbl);
+        // Make the bg zone interactive and bounce the whole container
+        btnBg.setInteractive();
+        this._makeBouncyButton(btnBg, _qsBtnScale, () => {});
+        // Override: bounce container not just btnBg
+        btnBg.removeAllListeners();
+        const _cs = _qsBtnScale;
+        const _cb = _qsBtnScale * 1.26;
+        btnBg.on("pointerdown", () => {
+          btnBg._pressed = true;
+          this.tweens.killTweensOf(container);
+          this.tweens.add({ targets: container, scale: _cb, duration: 300, ease: "Bounce.Out" });
+        });
+        btnBg.on("pointerout", () => {
+          if (btnBg._pressed) {
+            btnBg._pressed = false;
+            this.tweens.killTweensOf(container);
+            this.tweens.add({ targets: container, scale: _cs, duration: 400, ease: "Bounce.Out" });
+          }
+        });
+        btnBg.on("pointerup", () => {
+          if (btnBg._pressed) {
+            btnBg._pressed = false;
+            this.tweens.killTweensOf(container);
+            container.setScale(_cs);
+          }
+        });
+
+        _qsSearchObjects.push(container);
       });
 
       const filtersLabelY  = qsPanelY + qsPanelH + 24;
       const filtersPanelY  = filtersLabelY + 20;
-      const filtersPanelH  = sh * 0.19;
+      const filtersPanelH  = sh * 0.20;
       const filtersLabel   = this.add.bitmapText(sw / 2, filtersLabelY, "bigFont", "Filters", labelSize)
         .setScrollFactor(0).setDepth(105).setOrigin(0.5, 0.5).setTint(labelColor);
 
       gfx.fillStyle(filtersPanelColor, panelAlpha);
       gfx.fillRoundedRect(panelLeft, filtersPanelY, panelW, filtersPanelH, panelRadius);
 
-      // --- Difficulty filter icons (from GJ_GameSheet03) ---
-      // difficulty_00 = N/A, 01 = Easy, 02 = Normal, 03 = Hard, 04 = Harder,
-      // 05 = Insane, 06 = Demon, auto = Auto
+      // --- Difficulty filter icons ---
+      // Use diffIcon_ frames: square, non-rotated face icons
+      // 00=N/A 01=Easy 02=Normal 03=Hard 04=Harder 05=Insane 06=Demon auto=Auto
       const _diffFrames = [
-        "difficulty_00_btn_001.png",
-        "difficulty_01_btn_001.png",
-        "difficulty_02_btn_001.png",
-        "difficulty_03_btn_001.png",
-        "difficulty_04_btn_001.png",
-        "difficulty_05_btn_001.png",
-        "difficulty_06_btn_001.png",
-        "difficulty_auto_btn_001.png",
+        "diffIcon_00_btn_001.png",
+        "diffIcon_01_btn_001.png",
+        "diffIcon_02_btn_001.png",
+        "diffIcon_03_btn_001.png",
+        "diffIcon_04_btn_001.png",
+        "diffIcon_05_btn_001.png",
+        "diffIcon_06_btn_001.png",
+        "diffIcon_auto_btn_001.png",
       ];
       const _diffLabels = ["N/A","Easy","Normal","Hard","Harder","Insane","Demon","Auto"];
-      const _diffCount = _diffFrames.length;
-      const _diffIconH  = filtersPanelH * 0.52;
-      const _diffTotalW = panelW * 0.88;
-      const _diffSpacing = _diffTotalW / _diffCount;
-      const _diffStartX  = panelLeft + (panelW - _diffTotalW) / 2 + _diffSpacing / 2;
-      const _diffIconY   = filtersPanelY + filtersPanelH * 0.38;
-      const _diffLabelY  = filtersPanelY + filtersPanelH * 0.82;
+      const _diffCount   = _diffFrames.length;
+      // Evenly space across panel with equal gaps on both sides
+      const _diffPadX    = panelW * 0.03;
+      const _diffSlotW   = (panelW - _diffPadX * 2) / _diffCount;
+      const _diffIconH   = Math.min(_diffSlotW * 0.75, filtersPanelH * 0.50);
+      const _diffIconY   = filtersPanelY + filtersPanelH * 0.36;
+      const _diffLabelY  = filtersPanelY + filtersPanelH * 0.76;
       const _diffObjects = [];
 
       _diffFrames.forEach((frame, i) => {
-        const dx = _diffStartX + i * _diffSpacing;
-        const icon = this.add.image(dx, _diffIconY, "GJ_GameSheet03", frame)
-          .setScrollFactor(0).setDepth(106).setOrigin(0.5, 0.5).setInteractive()
-          .setTint(0x666666);
-        icon.setScale(_diffIconH / icon.height);
-        const lbl = this.add.bitmapText(dx, _diffLabelY, "bigFont", _diffLabels[i], 18)
-          .setScrollFactor(0).setDepth(106).setOrigin(0.5, 0.5).setTint(0x888888);
-        this._makeBouncyButton(icon, icon.scale, () => {
-          const active = icon._diffActive = !icon._diffActive;
-          icon.setTint(active ? 0xffffff : 0x666666);
-          lbl.setTint(active ? 0xffffff : 0x888888);
+        const dx = panelLeft + _diffPadX + i * _diffSlotW + _diffSlotW / 2;
+        // Container so icon+label toggle and bounce together
+        const dc = this.add.container(dx, 0).setScrollFactor(0).setDepth(106);
+        const icon = this.add.image(0, _diffIconY - filtersPanelY, "GJ_GameSheet03", frame)
+          .setOrigin(0.5, 0.5).setTint(0x666666);
+        // Use displayHeight (post-atlas-rotation) for correct scale
+        icon.setScale(_diffIconH / icon.displayHeight);
+        const lbl = this.add.bitmapText(0, _diffLabelY - filtersPanelY, "bigFont", _diffLabels[i], 17)
+          .setOrigin(0.5, 0.5).setTint(0x888888);
+        dc.add([icon, lbl]);
+        // Interactive zone sized to icon
+        const zoneH = _diffIconH * 1.3;
+        const zone = this.add.zone(0, _diffIconY - filtersPanelY, _diffSlotW * 0.9, zoneH)
+          .setOrigin(0.5, 0.5).setInteractive();
+        dc.add(zone);
+        const _ds = 1;
+        const _db = 1.26;
+        zone.on("pointerdown", () => {
+          zone._pressed = true;
+          this.tweens.killTweensOf(dc);
+          this.tweens.add({ targets: dc, scale: _db, duration: 300, ease: "Bounce.Out" });
         });
-        _diffObjects.push(icon, lbl);
+        zone.on("pointerout", () => {
+          if (zone._pressed) {
+            zone._pressed = false;
+            this.tweens.killTweensOf(dc);
+            this.tweens.add({ targets: dc, scale: _ds, duration: 400, ease: "Bounce.Out" });
+          }
+        });
+        zone.on("pointerup", () => {
+          if (zone._pressed) {
+            zone._pressed = false;
+            this.tweens.killTweensOf(dc);
+            dc.setScale(_ds);
+            const active = icon._diffActive = !icon._diffActive;
+            icon.setTint(active ? 0xffffff : 0x666666);
+            lbl.setTint(active ? 0xffffff : 0x888888);
+          }
+        });
+        _diffObjects.push(dc);
       });
 
       const extraPanelY  = filtersPanelY + filtersPanelH + 18;
@@ -1321,27 +1378,45 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       gfx.fillStyle(extraPanelColor, panelAlpha);
       gfx.fillRoundedRect(panelLeft, extraPanelY, panelW, extraPanelH, panelRadius);
 
-      // --- Length filter buttons (bigFont text labels, dimmed like real GD) ---
-      const _lenLabels = ["Tiny","Short","Medium","Long","XL","Plat"];
-      const _lenCount  = _lenLabels.length;
-      const _lenTotalW = panelW * 0.80;
-      const _lenSpacing = _lenTotalW / _lenCount;
-      const _lenStartX  = panelLeft + (panelW - _lenTotalW) / 2 + _lenSpacing / 2;
+      // --- Length filter buttons ---
+      // Evenly spaced bigFont labels, matching real GD gaps
+      const _lenLabels  = ["Tiny","Short","Medium","Long","XL","Plat"];
+      const _lenCount   = _lenLabels.length;
+      const _lenPadX    = panelW * 0.04;
+      const _lenSlotW   = (panelW - _lenPadX * 2) / _lenCount;
       const _lenY       = extraPanelY + extraPanelH / 2;
       const _lenObjects = [];
 
       _lenLabels.forEach((name, i) => {
-        const lx = _lenStartX + i * _lenSpacing;
-        const lbl = this.add.bitmapText(lx, _lenY, "bigFont", name, 26)
-          .setScrollFactor(0).setDepth(106).setOrigin(0.5, 0.5)
-          .setTint(0x666666).setInteractive();
-        // make the hit area a bit larger than the text
-        lbl.setInteractive(new Phaser.Geom.Rectangle(-lbl.width/2 - 10, -lbl.height/2 - 8, lbl.width + 20, lbl.height + 16), Phaser.Geom.Rectangle.Contains);
-        this._makeBouncyButton(lbl, 1, () => {
-          const active = lbl._lenActive = !lbl._lenActive;
-          lbl.setTint(active ? 0xffffff : 0x666666);
+        const lx = panelLeft + _lenPadX + i * _lenSlotW + _lenSlotW / 2;
+        const lbl = this.add.bitmapText(lx, _lenY, "bigFont", name, 24)
+          .setScrollFactor(0).setDepth(106).setOrigin(0.5, 0.5).setTint(0x666666);
+        // Zone for hit area (avoids double-interactive bug on bitmapText)
+        const zone = this.add.zone(lx, _lenY, _lenSlotW * 0.9, extraPanelH * 0.85)
+          .setScrollFactor(0).setDepth(107).setInteractive();
+        const _ls = 1, _lb = 1.26;
+        zone.on("pointerdown", () => {
+          zone._pressed = true;
+          this.tweens.killTweensOf(lbl);
+          this.tweens.add({ targets: lbl, scale: _lb, duration: 300, ease: "Bounce.Out" });
         });
-        _lenObjects.push(lbl);
+        zone.on("pointerout", () => {
+          if (zone._pressed) {
+            zone._pressed = false;
+            this.tweens.killTweensOf(lbl);
+            this.tweens.add({ targets: lbl, scale: _ls, duration: 400, ease: "Bounce.Out" });
+          }
+        });
+        zone.on("pointerup", () => {
+          if (zone._pressed) {
+            zone._pressed = false;
+            this.tweens.killTweensOf(lbl);
+            lbl.setScale(_ls);
+            const active = lbl._lenActive = !lbl._lenActive;
+            lbl.setTint(active ? 0xffffff : 0x666666);
+          }
+        });
+        _lenObjects.push(lbl, zone);
       });
 
       this._searchOverlayObjects.push(gfx, qsLabel, filtersLabel, cornerBR, cornerBL,
