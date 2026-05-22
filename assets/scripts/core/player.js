@@ -41,6 +41,7 @@ class PlayerState {
     this.currentSlopeAngle = 0;
     this.currentSlopeDir = 1;
     this.lastSlopeAngle = 0;
+    this.slopeExitGrace = 0;
   }
 }
 
@@ -1641,8 +1642,7 @@ if (this.p.isFlying || this.p.isUfo) {
     const _flipMod = this.p.gravityFlipped ? -1 : 1;
     const _targetRad = -this.p.currentSlopeDir * (this.p.currentSlopeAngle || 0) * _flipMod;
     const _angleDiff = Math.atan2(Math.sin(_targetRad - this._rotation), Math.cos(_targetRad - this._rotation));
-    // Smooth exponential interpolation for slope rotation without snapping ahead of long ramps.
-    const _speed = 14;
+    const _speed = 30;
     const _blend = 1 - Math.exp(-_speed * Math.max(dt / 60, 0.00001));
     this._rotation += _angleDiff * _blend;
   }
@@ -2541,6 +2541,7 @@ _updateBallJump(_0x2fe319) {
       this.p.currentSlopeAngle = _floorSlopeHit.angle;
       this.p.lastSlopeAngle = _floorSlopeHit.angle;
       this.p.currentSlopeDir = gameObj.slopeDir || 1;
+      this.p.slopeExitGrace = 3;
       const _slopeYVel = (gameObj.h * playerSpeed) / gameObj.w;
       const _slopeVelMult = Math.min(1.12 / Math.max(_floorSlopeHit.angle, 0.01), 1.54);
       const _slopeDir = gameObj.slopeDir || 1;
@@ -2559,12 +2560,15 @@ _updateBallJump(_0x2fe319) {
       this.p.currentSlopeAngle = _ceilingSlopeHit.angle;
       this.p.lastSlopeAngle = _ceilingSlopeHit.angle;
       this.p.currentSlopeDir = gameObj.slopeDir || 1;
+      this.p.slopeExitGrace = 3;
       this.stopRotation();
       if (!this.p.isFlying) this._checkSnapJump(gameObj);
     } else if (_slopeDeath) {
       this._lastDeathReason = _slopeDeath;
       this.killPlayer();
       return;
+    } else if (this.p.wasOnSlope && this.p.slopeExitGrace > 0) {
+      this.p.slopeExitGrace--;
     }
     if (this.p.collideTop !== 0 && this.p.collideBottom !== 0) {
       if (Math.abs(this.p.collideTop - this.p.collideBottom) < 48) {
