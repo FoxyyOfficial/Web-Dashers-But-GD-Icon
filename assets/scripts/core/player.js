@@ -1641,7 +1641,14 @@ if (this.p.isFlying || this.p.isUfo) {
     }
     const _flipMod = this.p.gravityFlipped ? -1 : 1;
     const _targetRad = -this.p.currentSlopeDir * (this.p.currentSlopeAngle || 0) * _flipMod;
-    this._rotation = _targetRad;
+    const _angleDiff = Math.atan2(Math.sin(_targetRad - this._rotation), Math.cos(_targetRad - this._rotation));
+    if (Math.abs(_angleDiff) < 0.01) {
+      this._rotation = _targetRad;
+      return;
+    }
+    const _speed = 14;
+    const _blend = 1 - Math.exp(-_speed * Math.max(dt / 60, 0.00001));
+    this._rotation += _angleDiff * _blend;
   }
   updateSlopeExitRotation(dt) {
     // Called the frame(s) after the player leaves a slope but is still on the ground.
