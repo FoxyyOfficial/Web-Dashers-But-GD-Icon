@@ -2541,7 +2541,7 @@ _updateBallJump(_0x2fe319) {
       this.p.currentSlopeAngle = _floorSlopeHit.angle;
       this.p.lastSlopeAngle = _floorSlopeHit.angle;
       this.p.currentSlopeDir = gameObj.slopeDir || 1;
-      this.p.slopeExitGrace = 3;
+      this.p.slopeExitGrace = 20;
       const _slopeYVel = (gameObj.h * playerSpeed) / gameObj.w;
       const _slopeVelMult = Math.min(1.12 / Math.max(_floorSlopeHit.angle, 0.01), 1.54);
       const _slopeDir = gameObj.slopeDir || 1;
@@ -2560,7 +2560,7 @@ _updateBallJump(_0x2fe319) {
       this.p.currentSlopeAngle = _ceilingSlopeHit.angle;
       this.p.lastSlopeAngle = _ceilingSlopeHit.angle;
       this.p.currentSlopeDir = gameObj.slopeDir || 1;
-      this.p.slopeExitGrace = 3;
+      this.p.slopeExitGrace = 20;
       this.stopRotation();
       if (!this.p.isFlying) this._checkSnapJump(gameObj);
     } else if (_slopeDeath) {
