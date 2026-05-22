@@ -1214,32 +1214,139 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
 
       gfx.fillStyle(panelColor, panelAlpha);
       gfx.fillRoundedRect(panelLeft, qsPanelY, panelW, qsPanelH, panelRadius);
-      const comingSoonLabel = this.add.bitmapText(sw / 2, qsPanelY + qsPanelH / 2, "bigFont", "Coming Soon!", 42)
-        .setScrollFactor(0).setDepth(105).setOrigin(0.5, 0.5).setTint(0xadd8e6).setAlpha(0.75);
-      this._searchOverlayObjects.push(comingSoonLabel);
+
+      // --- Quick Search buttons (3 cols x 3 rows, last row 2 centered) ---
+      // Uses real in-game search icon sprites from GJ_GameSheet03
+      const _qsSearchObjects = [];
+      const _qsBtnDefs = [
+        { label: "Downloads", icon: "GJ_sDownloadIcon_001.png" },
+        { label: "Likes",     icon: "GJ_sLikeIcon_001.png"    },
+        { label: "Sent",      icon: null                       },
+        { label: "Trending",  icon: "GJ_sTrendingIcon_001.png" },
+        { label: "Recent",    icon: "GJ_sRecentIcon_001.png"   },
+        { label: "Magic",     icon: "GJ_sMagicIcon_001.png"    },
+        { label: "Awarded",   icon: "GJ_sStarsIcon_001.png"    },
+        { label: "Followed",  icon: "GJ_sFollowedIcon_001.png" },
+        { label: "More",      icon: null                       },
+      ];
+      const _qsCols = 3;
+      const _qsBtnW = panelW * 0.28;
+      const _qsBtnH = _qsBtnW * (64 / 209); // longBtn aspect ratio from GJ sheets
+      const _qsGapX = (panelW - _qsCols * _qsBtnW) / (_qsCols + 1);
+      const _qsRows = Math.ceil(_qsBtnDefs.length / _qsCols);
+      const _qsGapY = (qsPanelH - _qsRows * _qsBtnH) / (_qsRows + 1);
+
+      _qsBtnDefs.forEach((def, idx) => {
+        const col = idx % _qsCols;
+        const row = Math.floor(idx / _qsCols);
+        const bx = panelLeft + _qsGapX + col * (_qsBtnW + _qsGapX) + _qsBtnW / 2;
+        const by = qsPanelY + _qsGapY + row * (_qsBtnH + _qsGapY) + _qsBtnH / 2;
+
+        // Green long button background
+        const btnBg = this.add.image(bx, by, "GJ_GameSheet03", "GJ_longBtn01_001.png")
+          .setScrollFactor(0).setDepth(106).setOrigin(0.5, 0.5).setInteractive();
+        const bgNatW = btnBg.width, bgNatH = btnBg.height;
+        const btnScaleX = _qsBtnW / bgNatW;
+        const btnScaleY = _qsBtnH / bgNatH;
+        btnBg.setScale(btnScaleX, btnScaleY);
+
+        // Icon (if any) to the left of label
+        let iconImg = null;
+        if (def.icon) {
+          iconImg = this.add.image(bx - _qsBtnW * 0.26, by, "GJ_GameSheet03", def.icon)
+            .setScrollFactor(0).setDepth(107).setOrigin(0.5, 0.5);
+          const iconTargetH = _qsBtnH * 0.65;
+          iconImg.setScale(iconTargetH / iconImg.height);
+          _qsSearchObjects.push(iconImg);
+        }
+
+        // Label text
+        const lbl = this.add.bitmapText(def.icon ? bx + _qsBtnW * 0.06 : bx, by, "bigFont", def.label, 22)
+          .setScrollFactor(0).setDepth(107).setOrigin(0.5, 0.5).setTint(0xffffff);
+
+        this._makeBouncyButton(btnBg, Math.max(btnScaleX, btnScaleY), () => {});
+        _qsSearchObjects.push(btnBg, lbl);
+      });
+
       const filtersLabelY  = qsPanelY + qsPanelH + 24;
       const filtersPanelY  = filtersLabelY + 20;
-      const filtersPanelH  = sh * 0.16;
+      const filtersPanelH  = sh * 0.19;
       const filtersLabel   = this.add.bitmapText(sw / 2, filtersLabelY, "bigFont", "Filters", labelSize)
         .setScrollFactor(0).setDepth(105).setOrigin(0.5, 0.5).setTint(labelColor);
 
       gfx.fillStyle(filtersPanelColor, panelAlpha);
       gfx.fillRoundedRect(panelLeft, filtersPanelY, panelW, filtersPanelH, panelRadius);
 
-      const filtersComingSoon = this.add.bitmapText(sw / 2, filtersPanelY + filtersPanelH / 2, "bigFont", "Coming Soon!", 42)
-        .setScrollFactor(0).setDepth(105).setOrigin(0.5, 0.5).setTint(0xadd8e6).setAlpha(0.75);
+      // --- Difficulty filter icons (from GJ_GameSheet03) ---
+      // difficulty_00 = N/A, 01 = Easy, 02 = Normal, 03 = Hard, 04 = Harder,
+      // 05 = Insane, 06 = Demon, auto = Auto
+      const _diffFrames = [
+        "difficulty_00_btn_001.png",
+        "difficulty_01_btn_001.png",
+        "difficulty_02_btn_001.png",
+        "difficulty_03_btn_001.png",
+        "difficulty_04_btn_001.png",
+        "difficulty_05_btn_001.png",
+        "difficulty_06_btn_001.png",
+        "difficulty_auto_btn_001.png",
+      ];
+      const _diffLabels = ["N/A","Easy","Normal","Hard","Harder","Insane","Demon","Auto"];
+      const _diffCount = _diffFrames.length;
+      const _diffIconH  = filtersPanelH * 0.52;
+      const _diffTotalW = panelW * 0.88;
+      const _diffSpacing = _diffTotalW / _diffCount;
+      const _diffStartX  = panelLeft + (panelW - _diffTotalW) / 2 + _diffSpacing / 2;
+      const _diffIconY   = filtersPanelY + filtersPanelH * 0.38;
+      const _diffLabelY  = filtersPanelY + filtersPanelH * 0.82;
+      const _diffObjects = [];
+
+      _diffFrames.forEach((frame, i) => {
+        const dx = _diffStartX + i * _diffSpacing;
+        const icon = this.add.image(dx, _diffIconY, "GJ_GameSheet03", frame)
+          .setScrollFactor(0).setDepth(106).setOrigin(0.5, 0.5).setInteractive()
+          .setTint(0x666666);
+        icon.setScale(_diffIconH / icon.height);
+        const lbl = this.add.bitmapText(dx, _diffLabelY, "bigFont", _diffLabels[i], 18)
+          .setScrollFactor(0).setDepth(106).setOrigin(0.5, 0.5).setTint(0x888888);
+        this._makeBouncyButton(icon, icon.scale, () => {
+          const active = icon._diffActive = !icon._diffActive;
+          icon.setTint(active ? 0xffffff : 0x666666);
+          lbl.setTint(active ? 0xffffff : 0x888888);
+        });
+        _diffObjects.push(icon, lbl);
+      });
 
       const extraPanelY  = filtersPanelY + filtersPanelH + 18;
-      const extraPanelH  = sh * 0.11;
+      const extraPanelH  = sh * 0.10;
       gfx.fillStyle(extraPanelColor, panelAlpha);
       gfx.fillRoundedRect(panelLeft, extraPanelY, panelW, extraPanelH, panelRadius);
 
-      const extraComingSoon = this.add.bitmapText(sw / 2, extraPanelY + extraPanelH / 2, "bigFont", "Coming Soon!", 42)
-        .setScrollFactor(0).setDepth(105).setOrigin(0.5, 0.5).setTint(0xadd8e6).setAlpha(0.75);
+      // --- Length filter buttons (bigFont text labels, dimmed like real GD) ---
+      const _lenLabels = ["Tiny","Short","Medium","Long","XL","Plat"];
+      const _lenCount  = _lenLabels.length;
+      const _lenTotalW = panelW * 0.80;
+      const _lenSpacing = _lenTotalW / _lenCount;
+      const _lenStartX  = panelLeft + (panelW - _lenTotalW) / 2 + _lenSpacing / 2;
+      const _lenY       = extraPanelY + extraPanelH / 2;
+      const _lenObjects = [];
+
+      _lenLabels.forEach((name, i) => {
+        const lx = _lenStartX + i * _lenSpacing;
+        const lbl = this.add.bitmapText(lx, _lenY, "bigFont", name, 26)
+          .setScrollFactor(0).setDepth(106).setOrigin(0.5, 0.5)
+          .setTint(0x666666).setInteractive();
+        // make the hit area a bit larger than the text
+        lbl.setInteractive(new Phaser.Geom.Rectangle(-lbl.width/2 - 10, -lbl.height/2 - 8, lbl.width + 20, lbl.height + 16), Phaser.Geom.Rectangle.Contains);
+        this._makeBouncyButton(lbl, 1, () => {
+          const active = lbl._lenActive = !lbl._lenActive;
+          lbl.setTint(active ? 0xffffff : 0x666666);
+        });
+        _lenObjects.push(lbl);
+      });
 
       this._searchOverlayObjects.push(gfx, qsLabel, filtersLabel, cornerBR, cornerBL,
         placeholderLabel, typedLabel, inputCursor, inputHitZone, innerBtn1, innerBtn2, innerBtn3,
-        filtersComingSoon, extraComingSoon);
+        ..._qsSearchObjects, ..._diffObjects, ..._lenObjects);
 
       let _loading = false;
       const _doSearch = async () => {
