@@ -43,6 +43,7 @@ class PlayerState {
     this.lastSlopeAngle = 0;
     this.slopeExitGrace = 0;
     this.slopeExitRotationTarget = null;
+    this.holdSlopeExitRotation = false;
   }
 }
 
@@ -1570,6 +1571,7 @@ if (this.p.isFlying || this.p.isUfo) {
       this.p.canJump = false;
   }
   runRotateAction() {
+    this.p.holdSlopeExitRotation = false;
     this.rotateActionActive = true;
     this.rotateActionTime = 0;
     const _miniDurScale = this.p.isMini ? (1 / 1.4) : 1;
@@ -1631,6 +1633,9 @@ if (this.p.isFlying || this.p.isUfo) {
     if (this.p.isBall || this.p.isWave || this.p.isSpider) {
       return;
     }
+    if (this.p.holdSlopeExitRotation) {
+      return;
+    }
     let _0x183c2a = this.convertToClosestRotation();
     let _0x108955 = 0.47250000000000003;
     let _0x17a9a6 = Math.min(_0x5c24f7 * 1, _0x108955 * _0x5c24f7);
@@ -1641,6 +1646,7 @@ if (this.p.isFlying || this.p.isUfo) {
       return;
     }
     this.p.slopeExitRotationTarget = null;
+    this.p.holdSlopeExitRotation = false;
     const _flipMod = this.p.gravityFlipped ? -1 : 1;
     const _sideStep = Math.PI / 2;
     const _baseSlopeRad = -this.p.currentSlopeDir * (this.p.currentSlopeAngle || 0) * _flipMod;
@@ -1677,9 +1683,10 @@ if (this.p.isFlying || this.p.isUfo) {
     if (Math.abs(_angleDiff) < 0.01) {
       this._rotation = _targetRad;
       this.p.slopeExitRotationTarget = null;
+      this.p.holdSlopeExitRotation = true;
       return;
     }
-    const _speed = 12;
+    const _speed = 22;
     const _blend = 1 - Math.exp(-_speed * Math.max(dt / 60, 0.00001));
     this._rotation += _angleDiff * _blend;
   }
