@@ -2114,8 +2114,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         "Stop it!",
         "Not allowed!",
         "Why u click?",
-        "Nothing to see here...",
-        "This message is for testing...",    
+        "Nothing to see here..."
       ];
       const subtitleText = this.add.bitmapText(cx, sh * 0.21, "bigFont", subtitleMessages[Math.floor(Math.random() * subtitleMessages.length)], 36)
         .setOrigin(0.5)
