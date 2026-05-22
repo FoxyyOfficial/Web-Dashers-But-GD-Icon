@@ -42,6 +42,7 @@ class PlayerState {
     this.currentSlopeDir = 1;
     this.lastSlopeAngle = 0;
     this.slopeExitGrace = 0;
+    this.slopeExitRotationTarget = null;
   }
 }
 
@@ -1639,6 +1640,7 @@ if (this.p.isFlying || this.p.isUfo) {
     if (this.p.isBall || this.p.isWave || this.p.isSpider) {
       return;
     }
+    this.p.slopeExitRotationTarget = null;
     const _flipMod = this.p.gravityFlipped ? -1 : 1;
     const _sideStep = Math.PI / 2;
     const _baseSlopeRad = -this.p.currentSlopeDir * (this.p.currentSlopeAngle || 0) * _flipMod;
@@ -1659,9 +1661,25 @@ if (this.p.isFlying || this.p.isUfo) {
     if (this.p.isBall || this.p.isWave || this.p.isSpider) {
       return;
     }
-    const _targetRad = this.convertToClosestRotation();
+    const _sideStep = Math.PI / 2;
+    const _backwardDir = -this.flipMod();
+    if (this.p.slopeExitRotationTarget === null) {
+      const _scaledRotation = this._rotation / _sideStep;
+      this.p.slopeExitRotationTarget = _backwardDir < 0
+        ? Math.floor(_scaledRotation) * _sideStep
+        : Math.ceil(_scaledRotation) * _sideStep;
+      if (Math.abs(this.p.slopeExitRotationTarget - this._rotation) < 0.01) {
+        this.p.slopeExitRotationTarget += _backwardDir * _sideStep;
+      }
+    }
+    const _targetRad = this.p.slopeExitRotationTarget;
     const _angleDiff = Math.atan2(Math.sin(_targetRad - this._rotation), Math.cos(_targetRad - this._rotation));
-    const _speed = 8;
+    if (Math.abs(_angleDiff) < 0.01) {
+      this._rotation = _targetRad;
+      this.p.slopeExitRotationTarget = null;
+      return;
+    }
+    const _speed = 12;
     const _blend = 1 - Math.exp(-_speed * Math.max(dt / 60, 0.00001));
     this._rotation += _angleDiff * _blend;
   }
