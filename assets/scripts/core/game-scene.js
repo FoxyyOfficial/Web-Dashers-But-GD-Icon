@@ -2849,7 +2849,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       const diffFrame = diffIconKey + ".png";
       const iconX = cardX - cardW / 2 + 52;
       const isHardDemon = diffIconKey === "diffIcon_06_btn_001";
-      const iconRotation = isHardDemon ? Math.PI / 2 : 0;
+      const iconRotation = 0;
       const demonIcon = this.add.image(iconX - cardX, 0, "GJ_GameSheet03", diffFrame)
         .setScrollFactor(0).setDepth(155).setScale(1).setOrigin(0.5, 0.5).setRotation(iconRotation).setFlipY(isHardDemon);
       cardContentObjs.push(demonIcon);
