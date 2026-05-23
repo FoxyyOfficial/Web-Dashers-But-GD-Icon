@@ -2549,6 +2549,21 @@ _updateBallJump(_0x2fe319) {
                 if (!_floorSlopeHit || _distY < _floorSlopeHit.distY || (_distY === _floorSlopeHit.distY && _surfY > _floorSlopeHit.surfY)) {
                   _floorSlopeHit = { obj: gameObj, surfY: _surfY, playerRad: _playerRadOnSlope, angle: _slopeAngleRad, distY: _distY };
                 }
+                if (this.p.isFlying || this.p.isShip || this.p.isWave || this.p.isBird || this.p.isDart) {
+                  this.p.y = _surfY + _playerRadOnSlope;
+                  this.p.onGround = true;
+                  this.p.yVelocity = 0;
+                  this.p.canJump = true;
+                  this.p.collideBottom = _surfY;
+                  this.hitGround();
+                  this.p.isOnSlope = false;
+                  this.p.wasOnSlope = false;
+                  this.p.slopeVelocity = 0;
+                  this.p.currentSlopeAngle = 0;
+                  _floorSlopeHit = null;
+                  _0x30410f = true;
+                  continue;
+                }
                 continue;
               }
             } else {
@@ -2559,6 +2574,21 @@ _updateBallJump(_0x2fe319) {
                 const _distY = Math.abs(_targetY - playersY);
                 if (!_ceilingSlopeHit || _distY < _ceilingSlopeHit.distY || (_distY === _ceilingSlopeHit.distY && _surfY < _ceilingSlopeHit.surfY)) {
                   _ceilingSlopeHit = { obj: gameObj, surfY: _surfY, playerRad: _playerRadOnSlope, angle: _slopeAngleRad, distY: _distY };
+                }
+                if (this.p.isFlying || this.p.isShip || this.p.isWave || this.p.isBird || this.p.isDart) {
+                  this.p.y = _surfY - _playerRadOnSlope;
+                  this.p.onGround = true;
+                  this.p.yVelocity = 0;
+                  this.p.canJump = true;
+                  this.p.collideTop = _surfY;
+                  this.hitGround();
+                  this.p.isOnSlope = false;
+                  this.p.wasOnSlope = false;
+                  this.p.slopeVelocity = 0;
+                  this.p.currentSlopeAngle = 0;
+                  _ceilingSlopeHit = null;
+                  _0x30410f = true;
+                  continue;
                 }
                 continue;
               }
