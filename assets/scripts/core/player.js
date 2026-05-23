@@ -2580,6 +2580,13 @@ _updateBallJump(_0x2fe319) {
         }
       }
     }
+    if (this.p.isFlying || this.p.isShip || this.p.isWave || this.p.isBird || this.p.isDart) {
+      this.p.isOnSlope = false;
+      this.p.wasOnSlope = false;
+      this.p.slopeVelocity = 0;
+      this.p.currentSlopeAngle = 0;
+      return;
+    }
     if (_floorSlopeHit) {
       const gameObj = _floorSlopeHit.obj;
       this.p.y = _floorSlopeHit.surfY + _floorSlopeHit.playerRad;
