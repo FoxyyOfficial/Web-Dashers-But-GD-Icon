@@ -1215,33 +1215,30 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       gfx.fillStyle(panelColor, panelAlpha);
       gfx.fillRoundedRect(panelLeft, qsPanelY, panelW, qsPanelH, panelRadius);
 
-      // ── Quick Search buttons ────────────────────────────────────────────────
-      // Layout: 3 columns × 3 rows, matching GDBrowser filters.html exactly.
-      // Each button = GJ_longBtn (background) + icon on RIGHT + label centred-left.
-      // Icons are on the RIGHT side of the text (matching real GD/GDBrowser buttons).
-      // "More" uses GJ_longBtn02 (teal variant). "Sent" has no icon.
-      // All icons use displayHeight (not height) to handle atlas rotation correctly.
+      // ── Quick Search buttons ─────────────────────────────────────────────────
+      // 3 cols × 3 rows. Icon on RIGHT of text, matching GDBrowser exactly.
+      // Text center at -0.14*btnW, icon center at +0.34*btnW from container centre.
+      // Icon target height = 0.45*btnH (near-native size for 30px sprites).
       const _qsSearchObjects = [];
       const _qsBtnDefs = [
-        { label: "Downloads", sheet: "GJ_GameSheet03", icon: "GJ_sDownloadIcon_001.png"  },
-        { label: "Likes",     sheet: "GJ_GameSheet03", icon: "GJ_likesIcon_001.png"       },
-        { label: "Sent",      sheet: "GJ_GameSheet03", icon: "GJ_sModIcon_001.png"        },
-        { label: "Trending",  sheet: "GJ_GameSheet03", icon: "GJ_sTrendingIcon_001.png"   },
-        { label: "Recent",    sheet: "GJ_GameSheet03", icon: "GJ_sRecentIcon_001.png"     },
-        { label: "Magic",     sheet: "GJ_GameSheet03", icon: "GJ_sMagicIcon_001.png"      },
-        { label: "Awarded",   sheet: "GJ_GameSheet03", icon: "GJ_sStarsIcon_001.png"      },
-        { label: "Followed",  sheet: "GJ_GameSheet03", icon: "gj_heartOn_001.png"         },
-        { label: "More",      sheet: null,              icon: null,  teal: true            },
+        { label: "Downloads", icon: "GJ_sDownloadIcon_001.png" },
+        { label: "Likes",     icon: "GJ_likesIcon_001.png"     },
+        { label: "Sent",      icon: "GJ_sModIcon_001.png"      },
+        { label: "Trending",  icon: "GJ_sTrendingIcon_001.png" },
+        { label: "Recent",    icon: "GJ_sRecentIcon_001.png"   },
+        { label: "Magic",     icon: "GJ_sMagicIcon_001.png"    },
+        { label: "Awarded",   icon: "GJ_sStarsIcon_001.png"    },
+        { label: "Followed",  icon: "gj_heartOn_001.png"       },
+        { label: "More",      icon: null, teal: true           },
       ];
-      // GJ_longBtn01 native size in atlas: 184 × 61 (not rotated)
-      const _qsCols   = 3;
-      const _qsBtnW   = panelW * 0.285;
-      const _qsBtnH   = _qsBtnW * (61 / 184);
-      const _qsGapX   = (panelW - _qsCols * _qsBtnW) / (_qsCols + 1);
-      const _qsRows   = Math.ceil(_qsBtnDefs.length / _qsCols);
-      const _qsGapY   = (qsPanelH - _qsRows * _qsBtnH) / (_qsRows + 1);
-      const _qsSclX   = _qsBtnW / 184;
-      const _qsSclY   = _qsBtnH / 61;
+      const _qsCols  = 3;
+      const _qsBtnW  = panelW * 0.285;          // fits 3 cols with gaps
+      const _qsBtnH  = _qsBtnW * (61 / 184);   // longBtn01 native aspect
+      const _qsGapX  = (panelW - _qsCols * _qsBtnW) / (_qsCols + 1);
+      const _qsRows  = Math.ceil(_qsBtnDefs.length / _qsCols);
+      const _qsGapY  = (qsPanelH - _qsRows * _qsBtnH) / (_qsRows + 1);
+      const _qsSclX  = _qsBtnW / 184;
+      const _qsSclY  = _qsBtnH / 61;
 
       _qsBtnDefs.forEach((def, idx) => {
         const col = idx % _qsCols;
@@ -1249,44 +1246,37 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         const bx  = panelLeft + _qsGapX + col * (_qsBtnW + _qsGapX) + _qsBtnW / 2;
         const by  = qsPanelY  + _qsGapY + row * (_qsBtnH + _qsGapY) + _qsBtnH / 2;
 
-        // Container at button centre; children use local (relative) coordinates
         const ct = this.add.container(bx, by).setScrollFactor(0).setDepth(106);
 
-        // Background: green longBtn01 or teal longBtn02 for "More"
+        // Background
         const bgFrame = def.teal ? "GJ_longBtn02_001.png" : "GJ_longBtn01_001.png";
         const bg = this.add.image(0, 0, "GJ_GameSheet03", bgFrame)
           .setOrigin(0.5, 0.5).setScale(_qsSclX, _qsSclY);
         ct.add(bg);
 
-        // Measure label first so we can centre everything properly
-        // (BitmapText width isn't available until render, so we estimate)
-        const fontSize  = 20;
-        const iconSlot  = def.icon ? _qsBtnH * 0.75 : 0;   // space reserved for icon
-        const iconGap   = def.icon ? _qsBtnH * 0.15 : 0;   // gap between text and icon
-        // Text is shifted left; icon is to its right
-        const blockW    = iconSlot + (def.icon ? iconGap : 0);
-        const lblX      = def.icon ? -blockW * 0.30 : 0;
-        const lbl = this.add.bitmapText(lblX, 0, "bigFont", def.label, fontSize)
-          .setOrigin(0.5, 0.5).setTint(0xffffff);
-        ct.add(lbl);
+        if (def.icon) {
+          // Text center at -14% of btnW from container centre
+          const lblX = -_qsBtnW * 0.14;
+          const lbl = this.add.bitmapText(lblX, 0, "bigFont", def.label, 20)
+            .setOrigin(0.5, 0.5).setTint(0xffffff);
+          ct.add(lbl);
 
-        // Icon on the RIGHT of the label
-        if (def.icon && def.sheet) {
-          const ic = this.add.image(0, 0, def.sheet, def.icon).setOrigin(0.5, 0.5);
-          // displayHeight correctly gives post-rotation height
+          // Icon center at +34% of btnW from container centre
+          const ic = this.add.image(_qsBtnW * 0.34, 0, "GJ_GameSheet03", def.icon)
+            .setOrigin(0.5, 0.5);
           const icTargetH = _qsBtnH * 0.45;
           ic.setScale(icTargetH / ic.displayHeight);
-          // Position: right side of label block
-          ic.x = lblX + _qsBtnW * 0.28;
           ct.add(ic);
+        } else {
+          // No icon: label dead-centre
+          const lbl = this.add.bitmapText(0, 0, "bigFont", def.label, 20)
+            .setOrigin(0.5, 0.5).setTint(0xffffff);
+          ct.add(lbl);
         }
 
-        // Transparent hit zone covering the full button face
-        const hz = this.add.zone(0, 0, _qsBtnW, _qsBtnH)
-          .setOrigin(0.5, 0.5).setInteractive();
+        // Hit zone
+        const hz = this.add.zone(0, 0, _qsBtnW, _qsBtnH).setOrigin(0.5, 0.5).setInteractive();
         ct.add(hz);
-
-        // Bounce: grow on press, spring back on release
         hz.on("pointerdown", () => {
           hz._dn = true;
           this.tweens.killTweensOf(ct);
@@ -1306,7 +1296,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         _qsSearchObjects.push(ct);
       });
 
-      // ── Filters label + panel ────────────────────────────────────────────────
+      // ── Filters label + panel ─────────────────────────────────────────────────
       const filtersLabelY = qsPanelY + qsPanelH + 24;
       const filtersPanelY = filtersLabelY + 20;
       const filtersPanelH = sh * 0.195;
@@ -1316,9 +1306,10 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       gfx.fillStyle(filtersPanelColor, panelAlpha);
       gfx.fillRoundedRect(panelLeft, filtersPanelY, panelW, filtersPanelH, panelRadius);
 
-      // ── Difficulty icons ─────────────────────────────────────────────────────
-      // Use diffIcon_ frames — square face sprites, all 60×60 (no atlas rotation issues).
-      // Mapping matches GDBrowser filters.html: unrated, easy, normal, hard, harder, insane, demon, auto
+      // ── Difficulty icons ──────────────────────────────────────────────────────
+      // All 60x60 except diffIcon_06 (64x67 rotated), _09 (74x65 rotated).
+      // Use displayHeight for correct post-rotation scale.
+      // Demon (06) click expands to show 5 sub-type demons inline.
       const _diffDefs = [
         { frame: "diffIcon_00_btn_001.png", label: "N/A"    },
         { frame: "diffIcon_01_btn_001.png", label: "Easy"   },
@@ -1326,38 +1317,42 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         { frame: "diffIcon_03_btn_001.png", label: "Hard"   },
         { frame: "diffIcon_04_btn_001.png", label: "Harder" },
         { frame: "diffIcon_05_btn_001.png", label: "Insane" },
-        { frame: "diffIcon_06_btn_001.png", label: "Demon"  },
+        { frame: "diffIcon_06_btn_001.png", label: "Demon", isDemon: true },
         { frame: "diffIcon_auto_btn_001.png", label: "Auto" },
       ];
-      const _diffCount    = _diffDefs.length;
-      const _diffPadX     = panelW * 0.025;
-      const _diffSlotW    = (panelW - _diffPadX * 2) / _diffCount;
-      // Icon height = 52% of panel height, but cap so it never exceeds slot width
-      const _diffIconH    = Math.min(_diffSlotW * 0.70, filtersPanelH * 0.52);
-      // Absolute Y of icon centre and label centre
-      const _diffIconY    = filtersPanelY + filtersPanelH * 0.36;
-      const _diffLabelY   = filtersPanelY + filtersPanelH * 0.78;
-      const _diffObjects  = [];
+      // Demon sub-types (shown instead of normal row when demon is clicked)
+      const _demonDefs = [
+        { frame: "diffIcon_07_btn_001.png", label: "Easy"    },
+        { frame: "diffIcon_08_btn_001.png", label: "Medium"  },
+        { frame: "diffIcon_06_btn_001.png", label: "Hard"    },
+        { frame: "diffIcon_09_btn_001.png", label: "Insane"  },
+        { frame: "diffIcon_10_btn_001.png", label: "Extreme" },
+      ];
 
-      _diffDefs.forEach((def, i) => {
-        // Slot centre x (absolute world coord)
-        const dx = panelLeft + _diffPadX + i * _diffSlotW + _diffSlotW / 2;
+      const _diffCount  = _diffDefs.length;
+      const _diffPadX   = panelW * 0.025;
+      const _diffSlotW  = (panelW - _diffPadX * 2) / _diffCount;
+      const _diffIconH  = Math.min(_diffSlotW * 0.70, filtersPanelH * 0.50);
+      const _diffIconY  = filtersPanelY + filtersPanelH * 0.36;
+      const _diffLabelY = filtersPanelY + filtersPanelH * 0.78;
+      const _diffObjects = [];
 
-        // Icon — absolute position, no container offset bug
-        const icon = this.add.image(dx, _diffIconY, "GJ_GameSheet03", def.frame)
-          .setScrollFactor(0).setDepth(106).setOrigin(0.5, 0.5).setTint(0x888888);
-        icon.setScale(_diffIconH / icon.displayHeight);
+      // Track which normal diff icons exist so we can hide/show them
+      const _normalDiffGroups = []; // [{icon, lbl, zone}]
+      const _demonDiffGroups  = []; // [{icon, lbl, zone}] — hidden initially
+      let _demonMode = false;
 
-        // Label — absolute position
-        const lbl = this.add.bitmapText(dx, _diffLabelY, "bigFont", def.label, 16)
-          .setScrollFactor(0).setDepth(106).setOrigin(0.5, 0.5).setTint(0x888888);
-
-        // Hit zone covers icon + gap to label
-        const zoneH  = _diffLabelY - _diffIconY + _diffIconH * 0.5;
-        const zoneY  = _diffIconY + zoneH / 2 - _diffIconH * 0.25;
-        const zone   = this.add.zone(dx, zoneY, _diffSlotW * 0.88, zoneH)
-          .setScrollFactor(0).setDepth(107).setInteractive();
-
+      const _makeDiffSlot = (frame, label, slotIdx, totalSlots, padX, slotW, iconH, iconY, labelY, depth, onClick) => {
+        const dx = panelLeft + padX + slotIdx * slotW + slotW / 2;
+        const icon = this.add.image(dx, iconY, "GJ_GameSheet03", frame)
+          .setScrollFactor(0).setDepth(depth).setOrigin(0.5, 0.5).setTint(0x888888);
+        icon.setScale(iconH / icon.displayHeight);
+        const lbl = this.add.bitmapText(dx, labelY, "bigFont", label, 16)
+          .setScrollFactor(0).setDepth(depth).setOrigin(0.5, 0.5).setTint(0x888888);
+        const zoneH = labelY - iconY + iconH * 0.5;
+        const zoneY = iconY + zoneH / 2 - iconH * 0.25;
+        const zone = this.add.zone(dx, zoneY, slotW * 0.88, zoneH)
+          .setScrollFactor(0).setDepth(depth + 1).setInteractive();
         zone.on("pointerdown", () => {
           zone._dn = true;
           this.tweens.killTweensOf([icon, lbl]);
@@ -1367,37 +1362,93 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
           if (!zone._dn) return; zone._dn = false;
           this.tweens.killTweensOf([icon, lbl]);
           this.tweens.add({ targets: [icon, lbl], scale: 1, duration: 400, ease: "Bounce.Out" });
-          const on = icon._active = !icon._active;
-          icon.setTint(on ? 0xffffff : 0x888888);
-          lbl.setTint(on  ? 0xffffff : 0x888888);
+          onClick(icon, lbl);
         });
         zone.on("pointerout", () => {
           if (!zone._dn) return; zone._dn = false;
           this.tweens.killTweensOf([icon, lbl]);
           this.tweens.add({ targets: [icon, lbl], scale: 1, duration: 200, ease: "Back.Out" });
         });
+        return { icon, lbl, zone };
+      };
 
-        _diffObjects.push(icon, lbl, zone);
+      // Build normal difficulty row
+      _diffDefs.forEach((def, i) => {
+        const slot = _makeDiffSlot(
+          def.frame, def.label, i, _diffCount,
+          _diffPadX, _diffSlotW, _diffIconH, _diffIconY, _diffLabelY, 106,
+          (icon, lbl) => {
+            if (def.isDemon) {
+              // Switch to demon sub-type row
+              _demonMode = true;
+              _normalDiffGroups.forEach(g => { g.icon.setVisible(false); g.lbl.setVisible(false); g.zone.setActive(false).setVisible(false); });
+              _demonDiffGroups.forEach(g => { g.icon.setVisible(true);  g.lbl.setVisible(true);  g.zone.setActive(true).setVisible(true); });
+            } else {
+              const on = icon._active = !icon._active;
+              icon.setTint(on ? 0xffffff : 0x888888);
+              lbl.setTint(on  ? 0xffffff : 0x888888);
+            }
+          }
+        );
+        _normalDiffGroups.push(slot);
+        _diffObjects.push(slot.icon, slot.lbl, slot.zone);
       });
 
-      // ── Length panel ─────────────────────────────────────────────────────────
+      // Build demon sub-type row (hidden by default, uses same panel space)
+      // 5 demons + 1 "back" slot = 6 slots across the panel
+      const _demonSlots = 6;
+      const _demonSlotW = (panelW - _diffPadX * 2) / _demonSlots;
+      // Back button (left slot)
+      const _backSlot = _makeDiffSlot(
+        "diffIcon_06_btn_001.png", "Back", 0, _demonSlots,
+        _diffPadX, _demonSlotW, _diffIconH, _diffIconY, _diffLabelY, 106,
+        (icon, lbl) => {
+          // Return to normal row
+          _demonMode = false;
+          _demonDiffGroups.forEach(g => { g.icon.setVisible(false); g.lbl.setVisible(false); g.zone.setActive(false).setVisible(false); });
+          _normalDiffGroups.forEach(g => { g.icon.setVisible(true);  g.lbl.setVisible(true);  g.zone.setActive(true).setVisible(true); });
+        }
+      );
+      _backSlot.icon.setVisible(false); _backSlot.lbl.setVisible(false);
+      _backSlot.zone.setActive(false).setVisible(false);
+      _demonDiffGroups.push(_backSlot);
+      _diffObjects.push(_backSlot.icon, _backSlot.lbl, _backSlot.zone);
+
+      // 5 demon sub-type slots (slots 1-5)
+      _demonDefs.forEach((def, i) => {
+        const slot = _makeDiffSlot(
+          def.frame, def.label, i + 1, _demonSlots,
+          _diffPadX, _demonSlotW, _diffIconH, _diffIconY, _diffLabelY, 106,
+          (icon, lbl) => {
+            const on = icon._active = !icon._active;
+            icon.setTint(on ? 0xffffff : 0x888888);
+            lbl.setTint(on  ? 0xffffff : 0x888888);
+          }
+        );
+        slot.icon.setVisible(false); slot.lbl.setVisible(false);
+        slot.zone.setActive(false).setVisible(false);
+        _demonDiffGroups.push(slot);
+        _diffObjects.push(slot.icon, slot.lbl, slot.zone);
+      });
+
+      // ── Length panel ──────────────────────────────────────────────────────────
       const extraPanelY = filtersPanelY + filtersPanelH + 18;
       const extraPanelH = sh * 0.09;
       gfx.fillStyle(extraPanelColor, panelAlpha);
       gfx.fillRoundedRect(panelLeft, extraPanelY, panelW, extraPanelH, panelRadius);
 
-      // ── Length buttons ───────────────────────────────────────────────────────
-      // Plain bigFont labels evenly spaced, dimmed until toggled — matches real GD.
-      // Star icon after "Plat" (matches GDBrowser screenshot).
-      const _lenDefs   = ["Tiny","Short","Medium","Long","XL","Plat"];
-      const _lenPadX   = panelW * 0.03;
-      const _lenSlotW  = (panelW - _lenPadX * 2) / (_lenDefs.length + 0.6); // +0.6 room for star
-      const _lenY      = extraPanelY + extraPanelH / 2;
+      // ── Length buttons ────────────────────────────────────────────────────────
+      // 6 labels + star, evenly slotted. Dimmed until toggled.
+      const _lenDefs  = ["Tiny","Short","Medium","Long","XL","Plat"];
+      const _lenTotal = _lenDefs.length + 0.8;  // +0.8 gives star a slightly smaller slot
+      const _lenPadX  = panelW * 0.03;
+      const _lenSlotW = (panelW - _lenPadX * 2) / _lenTotal;
+      const _lenY     = extraPanelY + extraPanelH / 2;
       const _lenObjects = [];
 
       _lenDefs.forEach((name, i) => {
-        const lx  = panelLeft + _lenPadX + i * _lenSlotW + _lenSlotW / 2;
-        const lbl = this.add.bitmapText(lx, _lenY, "bigFont", name, 23)
+        const lx   = panelLeft + _lenPadX + i * _lenSlotW + _lenSlotW / 2;
+        const lbl  = this.add.bitmapText(lx, _lenY, "bigFont", name, 23)
           .setScrollFactor(0).setDepth(106).setOrigin(0.5, 0.5).setTint(0x888888);
         const zone = this.add.zone(lx, _lenY, _lenSlotW * 0.88, extraPanelH * 0.85)
           .setScrollFactor(0).setDepth(107).setInteractive();
@@ -1420,15 +1471,14 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         _lenObjects.push(lbl, zone);
       });
 
-      // Gold star after "Plat" — matches GDBrowser layout
-      // Use star_small01 (25x25) — small, correct size for the length bar
-      const _starX     = panelLeft + _lenPadX + _lenDefs.length * _lenSlotW + _lenSlotW * 0.3;
-      const _starH     = extraPanelH * 0.48;
-      const _star      = this.add.image(_starX, _lenY, "GJ_GameSheet03", "star_small01_001.png")
+      // Star after "Plat" — uses star_small01 (25x25), fixed base scale
+      const _starX    = panelLeft + _lenPadX + _lenDefs.length * _lenSlotW + _lenSlotW * 0.35;
+      const _starH    = extraPanelH * 0.48;
+      const _star     = this.add.image(_starX, _lenY, "GJ_GameSheet03", "star_small01_001.png")
         .setScrollFactor(0).setDepth(106).setOrigin(0.5, 0.5).setTint(0x888888);
-      const _starBase  = _starH / _star.displayHeight;
+      const _starBase = _starH / _star.displayHeight;
       _star.setScale(_starBase);
-      const _starZone  = this.add.zone(_starX, _lenY, _lenSlotW * 0.7, extraPanelH * 0.85)
+      const _starZone = this.add.zone(_starX, _lenY, _lenSlotW * 0.7, extraPanelH * 0.85)
         .setScrollFactor(0).setDepth(107).setInteractive();
       _starZone.on("pointerdown", () => {
         _starZone._dn = true;
@@ -2849,7 +2899,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       const diffFrame = diffIconKey + ".png";
       const iconX = cardX - cardW / 2 + 52;
       const isHardDemon = diffIconKey === "diffIcon_06_btn_001";
-      const iconRotation = 0;
+      const iconRotation = isHardDemon ? Math.PI / 2 : 0;
       const demonIcon = this.add.image(iconX - cardX, 0, "GJ_GameSheet03", diffFrame)
         .setScrollFactor(0).setDepth(155).setScale(1).setOrigin(0.5, 0.5).setRotation(iconRotation).setFlipY(isHardDemon);
       cardContentObjs.push(demonIcon);
