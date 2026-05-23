@@ -1261,19 +1261,32 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
             .setOrigin(0.5, 0.5).setTint(0xffffff);
           ct.add(lbl);
 
-          // Icon center at +27% of btnW (closer to text)
-          // Some icons are packed rotated in the atlas — correct them manually
+          // Icons are packed rotated in the atlas — correct them manually
           const _rotatedQSIcons = new Set([
             "GJ_sLikeIcon_001.png",
             "GJ_sMagicIcon_001.png",
             "GJ_sRecentIcon_001.png",
             "GJ_sFollowedIcon_001.png",
           ]);
-          const ic = this.add.image(_qsBtnW * 0.27, 0, "GJ_GameSheet03", def.icon)
+          // Per-icon target height as fraction of btnH.
+          // Small GJ_s* icons (native ~30px) need a larger fraction to match
+          // the visual weight of bigger sprites like likesIcon (48px) or heartOn (60px).
+          const _smallIcons = new Set([
+            "GJ_sDownloadIcon_001.png",
+            "GJ_sModIcon_001.png",
+            "GJ_sTrendingIcon_001.png",
+            "GJ_sRecentIcon_001.png",
+            "GJ_sMagicIcon_001.png",
+            "GJ_sStarsIcon_001.png",
+            "GJ_sFollowedIcon_001.png",
+          ]);
+          // Downloads icon sits a touch further right so text+icon look balanced
+          const _icX = def.icon === "GJ_sDownloadIcon_001.png" ? _qsBtnW * 0.32 : _qsBtnW * 0.28;
+          const ic = this.add.image(_icX, 0, "GJ_GameSheet03", def.icon)
             .setOrigin(0.5, 0.5);
           if (_rotatedQSIcons.has(def.icon)) { ic.setAngle(90); }
-          const icTargetH = _qsBtnH * 0.45;
-          // Use max(displayWidth, displayHeight) so rotated+non-rotated all fit correctly
+          // Small icons target 65% of btnH; large icons (likesIcon, heartOn) target 55%
+          const icTargetH = _qsBtnH * (_smallIcons.has(def.icon) ? 0.65 : 0.55);
           const icNatural = Math.max(ic.displayWidth, ic.displayHeight);
           ic.setScale(icTargetH / icNatural);
           ct.add(ic);
@@ -1368,6 +1381,8 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         // Use the larger display dimension so all icons — rotated or wide — scale uniformly
         const _iconNatural = Math.max(icon.displayWidth, icon.displayHeight);
         icon.setScale(iconH / _iconNatural);
+        // Store base scale so bounce tweens are relative, not absolute
+        const _iconBase = icon.scale;
         const lbl = this.add.bitmapText(dx, labelY, "bigFont", label, 18)
           .setScrollFactor(0).setDepth(depth).setOrigin(0.5, 0.5).setTint(0x888888);
         const zoneH = labelY - iconY + iconH * 0.5;
@@ -1377,18 +1392,18 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         zone.on("pointerdown", () => {
           zone._dn = true;
           this.tweens.killTweensOf([icon, lbl]);
-          this.tweens.add({ targets: [icon, lbl], scale: 1.15, duration: 80, ease: "Quad.Out" });
+          this.tweens.add({ targets: [icon, lbl], scale: _iconBase * 1.15, duration: 80, ease: "Quad.Out" });
         });
         zone.on("pointerup", () => {
           if (!zone._dn) return; zone._dn = false;
           this.tweens.killTweensOf([icon, lbl]);
-          this.tweens.add({ targets: [icon, lbl], scale: 1, duration: 400, ease: "Bounce.Out" });
+          this.tweens.add({ targets: [icon, lbl], scale: _iconBase, duration: 400, ease: "Bounce.Out" });
           onClick(icon, lbl);
         });
         zone.on("pointerout", () => {
           if (!zone._dn) return; zone._dn = false;
           this.tweens.killTweensOf([icon, lbl]);
-          this.tweens.add({ targets: [icon, lbl], scale: 1, duration: 200, ease: "Back.Out" });
+          this.tweens.add({ targets: [icon, lbl], scale: _iconBase, duration: 200, ease: "Back.Out" });
         });
         return { icon, lbl, zone };
       };
@@ -1419,10 +1434,13 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       // 5 demons + 1 "back" slot = 6 slots across the panel
       const _demonSlots = 6;
       const _demonSlotW = (panelW - _diffPadX * 2) / _demonSlots;
+      // Demon icons are larger (67-80px wide) — give them their own iconH based on the
+      // wider demon slot so they aren't capped to the smaller 8-slot size
+      const _demonIconH = Math.min(_demonSlotW * 0.72, filtersPanelH * 0.52);
       // Back button (left slot) — use the pink backArrowPlain arrow, not a demon face
       const _backSlot = _makeDiffSlot(
         "backArrowPlain_01_001.png", "Back", 0, _demonSlots,
-        _diffPadX, _demonSlotW, _diffIconH, _diffIconY, _diffLabelY, 106,
+        _diffPadX, _demonSlotW, _demonIconH, _diffIconY, _diffLabelY, 106,
         (icon, lbl) => {
           // Return to normal row
           _demonMode = false;
@@ -1439,7 +1457,7 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       _demonDefs.forEach((def, i) => {
         const slot = _makeDiffSlot(
           def.frame, def.label, i + 1, _demonSlots,
-          _diffPadX, _demonSlotW, _diffIconH, _diffIconY, _diffLabelY, 106,
+          _diffPadX, _demonSlotW, _demonIconH, _diffIconY, _diffLabelY, 106,
           (icon, lbl) => {
             const on = icon._active = !icon._active;
             icon.setTint(on ? 0xffffff : 0x888888);
