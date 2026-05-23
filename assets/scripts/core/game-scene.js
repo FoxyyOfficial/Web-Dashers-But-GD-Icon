@@ -1255,15 +1255,23 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         ct.add(bg);
 
         if (def.icon) {
-          // Text center at -14% of btnW from container centre
-          const lblX = -_qsBtnW * 0.14;
+          // Text center at -12% of btnW from container centre
+          const lblX = -_qsBtnW * 0.12;
           const lbl = this.add.bitmapText(lblX, 0, "bigFont", def.label, 20)
             .setOrigin(0.5, 0.5).setTint(0xffffff);
           ct.add(lbl);
 
-          // Icon center at +34% of btnW from container centre
-          const ic = this.add.image(_qsBtnW * 0.34, 0, "GJ_GameSheet03", def.icon)
+          // Icon center at +30% of btnW from container centre
+          // Some icons are packed rotated in the atlas — correct them manually
+          const _rotatedQSIcons = new Set([
+            "GJ_sLikeIcon_001.png",
+            "GJ_sMagicIcon_001.png",
+            "GJ_sRecentIcon_001.png",
+            "GJ_sFollowedIcon_001.png",
+          ]);
+          const ic = this.add.image(_qsBtnW * 0.30, 0, "GJ_GameSheet03", def.icon)
             .setOrigin(0.5, 0.5);
+          if (_rotatedQSIcons.has(def.icon)) { ic.setAngle(90); }
           const icTargetH = _qsBtnH * 0.45;
           ic.setScale(icTargetH / ic.displayHeight);
           ct.add(ic);
@@ -1342,10 +1350,19 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       const _demonDiffGroups  = []; // [{icon, lbl, zone}] — hidden initially
       let _demonMode = false;
 
+      // Frames that are packed rotated in the atlas and need manual angle correction
+      const _rotatedDiffFrames = new Set([
+        "diffIcon_06_btn_001.png",
+        "diffIcon_09_btn_001.png",
+      ]);
+
       const _makeDiffSlot = (frame, label, slotIdx, totalSlots, padX, slotW, iconH, iconY, labelY, depth, onClick) => {
         const dx = panelLeft + padX + slotIdx * slotW + slotW / 2;
         const icon = this.add.image(dx, iconY, "GJ_GameSheet03", frame)
           .setScrollFactor(0).setDepth(depth).setOrigin(0.5, 0.5).setTint(0x888888);
+        // Phaser auto-corrects atlas rotation visually, but some packed sprites still
+        // render sideways depending on packer flags. Force-correct the known offenders.
+        if (_rotatedDiffFrames.has(frame)) { icon.setAngle(90); }
         icon.setScale(iconH / icon.displayHeight);
         const lbl = this.add.bitmapText(dx, labelY, "bigFont", label, 16)
           .setScrollFactor(0).setDepth(depth).setOrigin(0.5, 0.5).setTint(0x888888);
@@ -1398,9 +1415,9 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       // 5 demons + 1 "back" slot = 6 slots across the panel
       const _demonSlots = 6;
       const _demonSlotW = (panelW - _diffPadX * 2) / _demonSlots;
-      // Back button (left slot)
+      // Back button (left slot) — use the pink backArrowPlain arrow, not a demon face
       const _backSlot = _makeDiffSlot(
-        "diffIcon_06_btn_001.png", "Back", 0, _demonSlots,
+        "backArrowPlain_01_001.png", "Back", 0, _demonSlots,
         _diffPadX, _demonSlotW, _diffIconH, _diffIconY, _diffLabelY, 106,
         (icon, lbl) => {
           // Return to normal row
