@@ -1255,13 +1255,13 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         ct.add(bg);
 
         if (def.icon) {
-          // Text center at -12% of btnW from container centre
-          const lblX = -_qsBtnW * 0.12;
-          const lbl = this.add.bitmapText(lblX, 0, "bigFont", def.label, 20)
+          // Text center at -10% of btnW from container centre
+          const lblX = -_qsBtnW * 0.10;
+          const lbl = this.add.bitmapText(lblX, 0, "bigFont", def.label, 23)
             .setOrigin(0.5, 0.5).setTint(0xffffff);
           ct.add(lbl);
 
-          // Icon center at +30% of btnW from container centre
+          // Icon center at +27% of btnW (closer to text)
           // Some icons are packed rotated in the atlas — correct them manually
           const _rotatedQSIcons = new Set([
             "GJ_sLikeIcon_001.png",
@@ -1269,11 +1269,13 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
             "GJ_sRecentIcon_001.png",
             "GJ_sFollowedIcon_001.png",
           ]);
-          const ic = this.add.image(_qsBtnW * 0.30, 0, "GJ_GameSheet03", def.icon)
+          const ic = this.add.image(_qsBtnW * 0.27, 0, "GJ_GameSheet03", def.icon)
             .setOrigin(0.5, 0.5);
           if (_rotatedQSIcons.has(def.icon)) { ic.setAngle(90); }
           const icTargetH = _qsBtnH * 0.45;
-          ic.setScale(icTargetH / ic.displayHeight);
+          // Use max(displayWidth, displayHeight) so rotated+non-rotated all fit correctly
+          const icNatural = Math.max(ic.displayWidth, ic.displayHeight);
+          ic.setScale(icTargetH / icNatural);
           ct.add(ic);
         } else {
           // No icon: label dead-centre
@@ -1340,9 +1342,9 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       const _diffCount  = _diffDefs.length;
       const _diffPadX   = panelW * 0.025;
       const _diffSlotW  = (panelW - _diffPadX * 2) / _diffCount;
-      const _diffIconH  = Math.min(_diffSlotW * 0.70, filtersPanelH * 0.50);
-      const _diffIconY  = filtersPanelY + filtersPanelH * 0.36;
-      const _diffLabelY = filtersPanelY + filtersPanelH * 0.78;
+      const _diffIconH  = Math.min(_diffSlotW * 0.72, filtersPanelH * 0.52);
+      const _diffIconY  = filtersPanelY + filtersPanelH * 0.35;
+      const _diffLabelY = filtersPanelY + filtersPanelH * 0.72;
       const _diffObjects = [];
 
       // Track which normal diff icons exist so we can hide/show them
@@ -1363,8 +1365,10 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         // Phaser auto-corrects atlas rotation visually, but some packed sprites still
         // render sideways depending on packer flags. Force-correct the known offenders.
         if (_rotatedDiffFrames.has(frame)) { icon.setAngle(90); }
-        icon.setScale(iconH / icon.displayHeight);
-        const lbl = this.add.bitmapText(dx, labelY, "bigFont", label, 16)
+        // Use the larger display dimension so all icons — rotated or wide — scale uniformly
+        const _iconNatural = Math.max(icon.displayWidth, icon.displayHeight);
+        icon.setScale(iconH / _iconNatural);
+        const lbl = this.add.bitmapText(dx, labelY, "bigFont", label, 18)
           .setScrollFactor(0).setDepth(depth).setOrigin(0.5, 0.5).setTint(0x888888);
         const zoneH = labelY - iconY + iconH * 0.5;
         const zoneY = iconY + zoneH / 2 - iconH * 0.25;
