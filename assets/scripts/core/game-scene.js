@@ -1222,14 +1222,14 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       const _qsSearchObjects = [];
       const _qsBtnDefs = [
         { label: "Downloads", icon: "GJ_sDownloadIcon_001.png" },
-        { label: "Likes",     icon: "GJ_likesIcon_001.png"     },
-        { label: "Sent",      icon: "GJ_sModIcon_001.png"      },
-        { label: "Trending",  icon: "GJ_sTrendingIcon_001.png" },
-        { label: "Recent",    icon: "GJ_sRecentIcon_001.png"   },
-        { label: "Magic",     icon: "GJ_sMagicIcon_001.png"    },
-        { label: "Awarded",   icon: "GJ_sStarsIcon_001.png"    },
-        { label: "Followed",  icon: "gj_heartOn_001.png"       },
-        { label: "More",      icon: null, teal: true           },
+        { label: "Likes",      icon: "GJ_sLikeIcon_001.png"    },
+        { label: "Sent",       icon: "GJ_sModIcon_001.png"     },
+        { label: "Trending",   icon: "GJ_sTrendingIcon_001.png"},
+        { label: "Recent",     icon: "GJ_sRecentIcon_001.png"  },
+        { label: "Magic",      icon: "GJ_sMagicIcon_001.png"   },
+        { label: "Awarded",    icon: "GJ_sStarsIcon_001.png"   },
+        { label: "Followed",   icon: "GJ_sFollowedIcon_001.png"},
+        { label: "More",       icon: "GJ_arrow_03_001.png", teal: true },
       ];
       const _qsCols  = 3;
       const _qsBtnW  = panelW * 0.285;          // fits 3 cols with gaps
@@ -1255,26 +1255,18 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         ct.add(bg);
 
         if (def.icon) {
-          // --- Replicate the reference SearchScene layout exactly ---
-          // 1. Create label with origin (0, 0.5) so .width gives real text width
+          // Layout: text left, icon right, combined width centred in button
+          // Phaser auto-corrects atlas rotation — do NOT call setAngle on these.
           const lbl = this.add.bitmapText(0, 0, "bigFont", def.label, 22)
             .setOrigin(0, 0.5).setTint(0xffffff);
 
-          // 2. Create icon at scale 1.1 (same as reference), correct atlas rotation
-          const _rotatedQSIcons = new Set([
-            "GJ_sLikeIcon_001.png",
-            "GJ_sMagicIcon_001.png",
-            "GJ_sRecentIcon_001.png",
-            "GJ_sFollowedIcon_001.png",
-          ]);
           const ic = this.add.image(0, 0, "GJ_GameSheet03", def.icon)
             .setOrigin(1, 0.5);
-          if (_rotatedQSIcons.has(def.icon)) { ic.setAngle(90); }
           ic.setScale(1.1);
 
-          // 3. Place text+icon based on combined width with a gap (matches reference)
+          // displayWidth already includes the scale — do NOT multiply again
           const _gap = 5.5;
-          const _totalW = lbl.width + ic.displayWidth * 1.1 + _gap;
+          const _totalW = lbl.width + ic.displayWidth + _gap;
           lbl.x = -_totalW / 2;
           ic.x  =  _totalW / 2;
           lbl.y = -1;
@@ -1348,8 +1340,8 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       const _diffPadX   = panelW * 0.025;
       const _diffSlotW  = (panelW - _diffPadX * 2) / _diffCount;
       const _diffIconH  = Math.min(_diffSlotW * 0.72, filtersPanelH * 0.52);
-      const _diffIconY  = filtersPanelY + filtersPanelH * 0.35;
-      const _diffLabelY = filtersPanelY + filtersPanelH * 0.72;
+      const _diffIconY  = filtersPanelY + filtersPanelH * 0.34;
+      const _diffLabelY = filtersPanelY + filtersPanelH * 0.70;
       const _diffObjects = [];
 
       // Track which normal diff icons exist so we can hide/show them
@@ -1357,24 +1349,18 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
       const _demonDiffGroups  = []; // [{icon, lbl, zone}] — hidden initially
       let _demonMode = false;
 
-      // Frames that are packed rotated in the atlas and need manual angle correction
-      const _rotatedDiffFrames = new Set([
-        "diffIcon_06_btn_001.png",
-        "diffIcon_09_btn_001.png",
-      ]);
-
       const _makeDiffSlot = (frame, label, slotIdx, totalSlots, padX, slotW, iconH, iconY, labelY, depth, onClick) => {
         const dx = panelLeft + padX + slotIdx * slotW + slotW / 2;
         const icon = this.add.image(dx, iconY, "GJ_GameSheet03", frame)
           .setScrollFactor(0).setDepth(depth).setOrigin(0.5, 0.5).setTint(0x888888);
         // Phaser auto-corrects atlas rotation visually, but some packed sprites still
         // render sideways depending on packer flags. Force-correct the known offenders.
-        if (_rotatedDiffFrames.has(frame)) { icon.setAngle(90); }
-        // Flat 0.8 scale for all diff icons — same as reference SearchScene
-        // This avoids size calculation bugs from varying native dimensions
-        icon.setScale(0.8);
-        const _iconBase = 0.8;
-        const lbl = this.add.bitmapText(dx, labelY, "bigFont", label, 18)
+        // Phaser auto-corrects atlas rotation — no setAngle needed.
+        // Flat scale for all diff icons, slightly larger than reference (0.8)
+        // so they match GDBrowser's visual weight at this canvas size.
+        icon.setScale(0.88);
+        const _iconBase = 0.88;
+        const lbl = this.add.bitmapText(dx, labelY, "bigFont", label, 20)
           .setScrollFactor(0).setDepth(depth).setOrigin(0.5, 0.5).setTint(0x888888);
         const zoneH = labelY - iconY + iconH * 0.5;
         const zoneY = iconY + zoneH / 2 - iconH * 0.25;
