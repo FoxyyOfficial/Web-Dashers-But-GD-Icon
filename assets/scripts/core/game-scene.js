@@ -1255,44 +1255,36 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         ct.add(bg);
 
         if (def.icon) {
-          // Text center at -10% of btnW from container centre
-          const lblX = -_qsBtnW * 0.10;
-          const lbl = this.add.bitmapText(lblX, 0, "bigFont", def.label, 23)
-            .setOrigin(0.5, 0.5).setTint(0xffffff);
-          ct.add(lbl);
+          // --- Replicate the reference SearchScene layout exactly ---
+          // 1. Create label with origin (0, 0.5) so .width gives real text width
+          const lbl = this.add.bitmapText(0, 0, "bigFont", def.label, 22)
+            .setOrigin(0, 0.5).setTint(0xffffff);
 
-          // Icons are packed rotated in the atlas — correct them manually
+          // 2. Create icon at scale 1.1 (same as reference), correct atlas rotation
           const _rotatedQSIcons = new Set([
             "GJ_sLikeIcon_001.png",
             "GJ_sMagicIcon_001.png",
             "GJ_sRecentIcon_001.png",
             "GJ_sFollowedIcon_001.png",
           ]);
-          // Per-icon target height as fraction of btnH.
-          // Small GJ_s* icons (native ~30px) need a larger fraction to match
-          // the visual weight of bigger sprites like likesIcon (48px) or heartOn (60px).
-          const _smallIcons = new Set([
-            "GJ_sDownloadIcon_001.png",
-            "GJ_sModIcon_001.png",
-            "GJ_sTrendingIcon_001.png",
-            "GJ_sRecentIcon_001.png",
-            "GJ_sMagicIcon_001.png",
-            "GJ_sStarsIcon_001.png",
-            "GJ_sFollowedIcon_001.png",
-          ]);
-          // Downloads icon sits a touch further right so text+icon look balanced
-          const _icX = def.icon === "GJ_sDownloadIcon_001.png" ? _qsBtnW * 0.32 : _qsBtnW * 0.28;
-          const ic = this.add.image(_icX, 0, "GJ_GameSheet03", def.icon)
-            .setOrigin(0.5, 0.5);
+          const ic = this.add.image(0, 0, "GJ_GameSheet03", def.icon)
+            .setOrigin(1, 0.5);
           if (_rotatedQSIcons.has(def.icon)) { ic.setAngle(90); }
-          // Small icons target 65% of btnH; large icons (likesIcon, heartOn) target 55%
-          const icTargetH = _qsBtnH * (_smallIcons.has(def.icon) ? 0.65 : 0.55);
-          const icNatural = Math.max(ic.displayWidth, ic.displayHeight);
-          ic.setScale(icTargetH / icNatural);
+          ic.setScale(1.1);
+
+          // 3. Place text+icon based on combined width with a gap (matches reference)
+          const _gap = 5.5;
+          const _totalW = lbl.width + ic.displayWidth * 1.1 + _gap;
+          lbl.x = -_totalW / 2;
+          ic.x  =  _totalW / 2;
+          lbl.y = -1;
+          ic.y  = 0;
+
+          ct.add(lbl);
           ct.add(ic);
         } else {
           // No icon: label dead-centre
-          const lbl = this.add.bitmapText(0, 0, "bigFont", def.label, 20)
+          const lbl = this.add.bitmapText(0, 0, "bigFont", def.label, 22)
             .setOrigin(0.5, 0.5).setTint(0xffffff);
           ct.add(lbl);
         }
@@ -1378,11 +1370,10 @@ this._menuUpdateLogBtn = this.add.image(screenWidth - 30 - 50, 33, "GJ_WebSheet"
         // Phaser auto-corrects atlas rotation visually, but some packed sprites still
         // render sideways depending on packer flags. Force-correct the known offenders.
         if (_rotatedDiffFrames.has(frame)) { icon.setAngle(90); }
-        // Use the larger display dimension so all icons — rotated or wide — scale uniformly
-        const _iconNatural = Math.max(icon.displayWidth, icon.displayHeight);
-        icon.setScale(iconH / _iconNatural);
-        // Store base scale so bounce tweens are relative, not absolute
-        const _iconBase = icon.scale;
+        // Flat 0.8 scale for all diff icons — same as reference SearchScene
+        // This avoids size calculation bugs from varying native dimensions
+        icon.setScale(0.8);
+        const _iconBase = 0.8;
         const lbl = this.add.bitmapText(dx, labelY, "bigFont", label, 18)
           .setScrollFactor(0).setDepth(depth).setOrigin(0.5, 0.5).setTint(0x888888);
         const zoneH = labelY - iconY + iconH * 0.5;
