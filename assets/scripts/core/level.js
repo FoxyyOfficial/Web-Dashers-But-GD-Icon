@@ -1829,6 +1829,18 @@ window.LevelObject = class LevelObject {
       }
     }
   }
+  clearAlphaEffects() {
+    this._activeAlphaTweens = [];
+    this._groupOpacity = {};
+    for (const gid in this._groupSprites) {
+      for (const spr of this._groupSprites[gid]) {
+        if (!spr || !spr.active) continue;
+        if (spr._eeActive) continue;
+        spr.setAlpha(1);
+        spr._eeOrigAlpha = 1;
+      }
+    }
+  }
 
   checkRotateTriggers(playerX) {
     while (this._rotateTriggerIdx < this._rotateTriggers.length) {
@@ -1918,6 +1930,10 @@ window.LevelObject = class LevelObject {
     }
   }
   stepPulseTriggers(dt, colorManager) {
+    if (window.isLowDetailMode && window.isLowDetailMode()) {
+      this.clearPulseEffects();
+      return;
+    }
     let i = 0;
     while (i < this._activePulses.length) {
       const pulse = this._activePulses[i];
@@ -1978,6 +1994,21 @@ window.LevelObject = class LevelObject {
     this._activePulses = [];
   }
 
+  clearPulseEffects() {
+    for (const pulse of this._activePulses || []) {
+      const trig = pulse.trig;
+      if (trig.targetType === 1 && trig.targetGroup > 0) {
+        const sprites = this._groupSprites[trig.targetGroup];
+        if (sprites) for (const spr of sprites) { if (spr && spr.active) { spr.clearTint(); spr._eePulsed = false; } }
+      }
+      if (trig.targetType === 0 && trig.targetChannel > 0) {
+        const chSprites = this._colorChannelSprites[trig.targetChannel];
+        if (chSprites) for (const spr of chSprites) { if (spr && spr.active) spr._eePulsed = false; }
+      }
+    }
+    this._activePulses = [];
+  }
+
   applyColorChannels(colorManager) {
     for (const chId in this._colorChannelSprites) {
       const sprites = this._colorChannelSprites[chId];
@@ -1995,6 +2026,10 @@ window.LevelObject = class LevelObject {
 
   resetEnterEffectTriggers() {
     this._enterEffectTriggerIdx = 0;
+    this.clearEnterEffects();
+  }
+
+  clearEnterEffects() {
     this._activeEnterEffect = 0;
     this._activeExitEffect = 0;
     for (let _0x17a21d = 0; _0x17a21d < this._sections.length; _0x17a21d++) {
@@ -2130,6 +2165,9 @@ window.LevelObject = class LevelObject {
     }
   }
   updateAudioScale(_0x337bf7) {
+    if (window.isLowDetailMode && window.isLowDetailMode()) {
+      return;
+    }
     for (let _0x24afdb of this._audioScaleSprites) {
       _0x24afdb.setScale(_0x337bf7);
     }
@@ -2153,6 +2191,17 @@ window.LevelObject = class LevelObject {
         }
       } else {
         _0xOrbSpr.setScale(_baseScale);
+      }
+    }
+  }
+  clearAudioScaleEffects() {
+    for (let _0x24afdb of this._audioScaleSprites) {
+      if (_0x24afdb && _0x24afdb.active) _0x24afdb.setScale(0.1);
+    }
+    for (let _0xOrbSpr of this._orbSprites) {
+      if (_0xOrbSpr && _0xOrbSpr.active) {
+        _0xOrbSpr._hitTime = null;
+        _0xOrbSpr.setScale(0.75);
       }
     }
   }

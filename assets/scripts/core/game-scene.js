@@ -373,8 +373,10 @@ class GameScene extends Phaser.Scene {
       }
     });
     this._level.additiveContainer.add(this._glitterEmitter);
-    this._bg.setTint(this._colorManager.getHex(fs));
-    this._level.setGroundColor(this._colorManager.getHex(gs));
+    this._staticBgColor = this._colorManager.getHex(fs);
+    this._staticGroundColor = this._colorManager.getHex(gs);
+    this._bg.setTint(this._staticBgColor);
+    this._level.setGroundColor(this._staticGroundColor);
     this._level.additiveContainer.setVisible(false);
     this._level.container.setVisible(false);
     this._level.topContainer.setVisible(false);
@@ -3622,17 +3624,24 @@ _buildSettingsPopup() {
                 if (v) {
                     if (this._glitterEmitter) this._glitterEmitter.stop();
                     if (this._menuGlitter) this._menuGlitter.stop();
+                    this._applyLowDetailVisualCuts?.();
                     if (this._iconBtn) {
                         this.tweens.killTweensOf(this._iconBtn);
                         this._iconBtn.y = 320;
                     }
-                    this._bg.setTint(this._colorManager.getHex(fs));
-                    this._level.setGroundColor(this._colorManager.getHex(gs));
+                    this._bg.setTint(this._staticBgColor ?? this._colorManager.getHex(fs));
+                    this._level.setGroundColor(this._staticGroundColor ?? this._colorManager.getHex(gs));
                     if (this._orbGfx) this._orbGfx.clear();
                     this._player?._updateParticles?.(this._cameraX, this._cameraY, 0);
                     this._player2?._updateParticles?.(this._cameraX, this._cameraY, 0);
-                } else if (this._menuActive && this._menuGlitter) {
-                    this._menuGlitter.start();
+                } else {
+                    this._ldmVisualsCleared = false;
+                    if (!this._menuActive && this._level?.additiveContainer) {
+                        this._level.additiveContainer.setVisible(true);
+                    }
+                    if (this._menuActive && this._menuGlitter) {
+                        this._menuGlitter.start();
+                    }
                 }
             }
         );
@@ -3733,6 +3742,7 @@ _buildSettingsPopup() {
       if (this._menuGlitter) this._menuGlitter.stop();
       if (this._glitterEmitter) this._glitterEmitter.stop();
       if (this._orbGfx) this._orbGfx.clear();
+      this._applyLowDetailVisualCuts?.();
     }
   }
   _buildMacroPopup() {
@@ -4494,6 +4504,20 @@ _buildSettingsPopup() {
         screen.orientation.lock("landscape").catch(() => {});
       } catch (_0x22124f) {}
     }
+  }
+  _applyLowDetailVisualCuts() {
+    if (!this._level) return;
+    this._level.clearPulseEffects?.();
+    this._level.clearAlphaEffects?.();
+    this._level.clearEnterEffects?.();
+    if (this._level.additiveContainer) {
+      this._level.additiveContainer.setVisible(false);
+    }
+    if (this._bg) {
+      this._bg.setTint(this._staticBgColor ?? this._colorManager.getHex(fs));
+    }
+    this._level.setGroundColor(this._staticGroundColor ?? this._colorManager.getHex(gs));
+    this._ldmVisualsCleared = true;
   }
   _drawScale9(_0x147730, _0x4c8cbf, scaleWidth, scaleHeight, _0x24a44b, borderSize, _0x590eba, _0x206735) {
     const _0x4080b2 = this.add.container(_0x147730, _0x4c8cbf);
@@ -5399,6 +5423,10 @@ _buildSettingsPopup() {
     }
   }
   _updateBackground() {
+    if (window.isLowDetailMode && window.isLowDetailMode()) {
+      this._prevCameraX = this._cameraX;
+      return;
+    }
     this._bg.tilePositionX += (this._cameraX - this._prevCameraX) * this._bgSpeedX;
     this._prevCameraX = this._cameraX;
     this._bg.tilePositionY = this._bgInitY - this._cameraY * this._bgSpeedY;
@@ -5575,8 +5603,8 @@ _buildSettingsPopup() {
       this._spaceWasDown = this._spaceKey.isDown || this._upKey.isDown || this._wKey.isDown || this._lKey.isDown;
       if (window.isLowDetailMode && window.isLowDetailMode()) {
         if (this._menuGlitter) this._menuGlitter.stop();
-        this._bg.setTint(this._colorManager.getHex(fs));
-        this._level.setGroundColor(this._colorManager.getHex(gs));
+        this._bg.setTint(this._staticBgColor ?? this._colorManager.getHex(fs));
+        this._level.setGroundColor(this._staticGroundColor ?? this._colorManager.getHex(gs));
         return;
       }
       const menuDelta = Math.min(deltaTime / 1000 * 60, 2);
@@ -5746,16 +5774,18 @@ _buildSettingsPopup() {
     this._playTime += deltaTime / 1000;
     this._audio.update(deltaTime / 1000);
     
-    window._animTimer += deltaTime;
-    for (let _as of window._animatedSprites) {
-      if (window._animTimer - (_as._lastAnimSwap || 0) >= _as._animInterval) {
-        _as._lastAnimSwap = window._animTimer;
-        _as._animIdx = (_as._animIdx + 1) % _as._animFrames.length;
-        let _fr = getAtlasFrame(_as._animScene, _as._animFrames[_as._animIdx]);
-        if (_fr) {
-          try {
-            _as.setTexture(_fr.atlas, _fr.frame);
-          } catch(e){}
+    if (!(window.isLowDetailMode && window.isLowDetailMode())) {
+      window._animTimer += deltaTime;
+      for (let _as of window._animatedSprites) {
+        if (window._animTimer - (_as._lastAnimSwap || 0) >= _as._animInterval) {
+          _as._lastAnimSwap = window._animTimer;
+          _as._animIdx = (_as._animIdx + 1) % _as._animFrames.length;
+          let _fr = getAtlasFrame(_as._animScene, _as._animFrames[_as._animIdx]);
+          if (_fr) {
+            try {
+              _as.setTexture(_fr.atlas, _fr.frame);
+            } catch(e){}
+          }
         }
       }
     }
@@ -5765,7 +5795,9 @@ _buildSettingsPopup() {
         if (_saw && _saw.active) _saw.rotation += sawRotation;
       }
     }
-    this._level.updateAudioScale(this._audio.getMeteringValue());
+    if (!(window.isLowDetailMode && window.isLowDetailMode())) {
+      this._level.updateAudioScale(this._audio.getMeteringValue());
+    }
     if (!this._orbGfx) {
       this._orbGfx = this.add.graphics().setDepth(54).setBlendMode(S);
     }
@@ -5828,7 +5860,6 @@ _buildSettingsPopup() {
     for (let i = 0; i < subSteps; i++) {
       this._state.lastY = this._state.y;
       this._physicsFrame++;
-      console.log(this._physicsFrame)
       if (this._macroBot?.playing) {
         this._macroBot.step(this._physicsFrame);
       }
@@ -5918,19 +5949,35 @@ if (!this._state.isFlying && !this._state.isWave && !this._state.isUfo) {
     }
     this._level.checkMoveTriggers(playerX);
     this._level.stepMoveTriggers(deltaTime / 1000);
-    this._level.checkAlphaTriggers(playerX);
-    this._level.stepAlphaTriggers(deltaTime / 1000);
+    if (window.isLowDetailMode && window.isLowDetailMode()) {
+      if (!this._ldmVisualsCleared) this._applyLowDetailVisualCuts();
+    } else {
+      this._ldmVisualsCleared = false;
+      this._level.checkAlphaTriggers(playerX);
+      this._level.stepAlphaTriggers(deltaTime / 1000);
+    }
     this._level.checkRotateTriggers(playerX);
     this._level.stepRotateTriggers(deltaTime / 1000);
-    this._level.checkPulseTriggers(playerX);
-    this._level.stepPulseTriggers(deltaTime / 1000, this._colorManager);
+    if (window.isLowDetailMode && window.isLowDetailMode()) {
+      this._level.clearPulseEffects();
+    } else {
+      this._level.checkPulseTriggers(playerX);
+      this._level.stepPulseTriggers(deltaTime / 1000, this._colorManager);
+    }
     this._colorManager.step(deltaTime / 1000);
     this._level.applyColorChannels(this._colorManager);
-    this._bg.setTint(this._colorManager.getHex(fs));
-    this._level.setGroundColor(this._colorManager.getHex(gs));
+    if (window.isLowDetailMode && window.isLowDetailMode()) {
+      this._bg.setTint(this._staticBgColor ?? this._colorManager.getHex(fs));
+      this._level.setGroundColor(this._staticGroundColor ?? this._colorManager.getHex(gs));
+    } else {
+      this._bg.setTint(this._colorManager.getHex(fs));
+      this._level.setGroundColor(this._colorManager.getHex(gs));
+    }
     this._level.updateVisibility(this._cameraX);
-    this._level.checkEnterEffectTriggers(playerX);
-    this._level.applyEnterEffects(this._cameraX);
+    if (!(window.isLowDetailMode && window.isLowDetailMode())) {
+      this._level.checkEnterEffectTriggers(playerX);
+      this._level.applyEnterEffects(this._cameraX);
+    }
     this._glitterCenterX = this._cameraX + screenWidth / 2;
     this._glitterCenterY = T - this._cameraY;
     this._updateBackground();
