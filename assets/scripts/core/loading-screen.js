@@ -275,6 +275,12 @@ class BootScene extends Phaser.Scene {
       this.load.image("slidergroove2", "assets/sprites/slidergroove2.png");
       this.load.image("secretLock_01", "assets/sprites/GJ_secretLock_001.png");
       this.load.image("vaultBg", "assets/sprites/Vault.png");
+      this.load.image("macroBot", "assets/sprites/macroBot.png");
+      this.load.image("importMacro", "assets/sprites/importMacro.png");
+      this.load.image("playbackMacro", "assets/sprites/playbackMacro.png");
+      this.load.image("stopPlayback", "assets/sprites/stopPlayback.png");
+      this.load.image("recordMacro", "assets/sprites/recordMacro.png");
+      this.load.image("stopRecord", "assets/sprites/stopRecord.png");
 
       for (let i = 1; i < 23; i++) {
         let index = i - 1;
