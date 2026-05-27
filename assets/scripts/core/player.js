@@ -270,10 +270,6 @@ class WaveTrail {
   }
 
   update(delta) {
-    if (window.isLowDetailMode && window.isLowDetailMode()) {
-      this.reset();
-      return;
-    }
     if (!this._posInit) { this._gfx.clear(); this._glowGfx.clear(); return; }
     const decay = (delta / 1000) / this._maxAge;
 
@@ -681,9 +677,6 @@ class PlayerObject {
       this._flyParticleActive = false;
       this._flyParticle2Active = false;
       this._shipDragActive = false;
-      this._streak.reset();
-      this._waveTrail.reset();
-      return;
     }
     if (this.p.isDead) {
       return;

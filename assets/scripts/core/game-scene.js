@@ -3947,7 +3947,7 @@ _buildSettingsPopup() {
       { text: "breadbb, PinkDev, rohanis0000,", scale: 0.7, font: "goldFont" },
       { text: "bog, AntiMatter, arbstro, aloaf", scale: 0.7, font: "goldFont" },
       { text: "Contributors:", scale: 0.9, font: "bigFont" },
-      { text: "t0nchi7 and Lasokar.", scale: 0.7, font: "goldFont" },
+      { text: "t0nchi7, Lasokar, POW_Boy1", scale: 0.7, font: "goldFont" },
       { text: "© 2026 RobTop Games. All rights reserved.", scale: 0.4, font: "Arial", color: 0x000000 },
     ]; 
     let yPos = 0;
@@ -4245,7 +4245,7 @@ _buildSettingsPopup() {
     const updateEntries = [
       { text: "Update Log", scale: 0.85, font: "goldFont" },
       { text: "Added Low Detail Mode", scale: 0.65 },
-      { text: "Credits to POWBoy1/POW_Boy1 for making it", scale: 0.6 },
+      { text: "Credits to POWBoy1/POW_Boy1 for making it", scale: 0.5 },
       { text: "is this update finally out?", scale: 0.65, color: 0xaaddff },
       { text: "- rohanis0000", scale: 0.65, color: 0xaaddff },
     ]; 
