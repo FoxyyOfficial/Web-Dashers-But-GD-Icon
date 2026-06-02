@@ -29,7 +29,13 @@ class Collider {
     if (this.slopeFlipY) angleDeg = -angleDeg;
     return angleDeg * Math.PI / 180;
   }
-  isSlopeSolidAt(worldX, worldY) {
+  usesFloorLanding(gravityFlipped) {
+    return !gravityFlipped;
+  }
+  isSolidBelowSurface(gravityFlipped) {
+    return this.slopeFlipY === gravityFlipped;
+  }
+  isSlopeSolidAt(worldX, worldY, gravityFlipped = false) {
     if (this.type !== slopeType) return false;
     const halfW = this.w / 2;
     const halfH = this.h / 2;
@@ -45,11 +51,11 @@ class Collider {
     }
     const surfaceY = this.getSlopeSurfaceY(worldX);
     if (surfaceY === null) return false;
-    return worldY < surfaceY;
+    return this.isSolidBelowSurface(gravityFlipped) ? worldY < surfaceY : worldY > surfaceY;
   }
-  getSlopeBackWallSide() {
+  getSlopeBackWallSide(gravityFlipped = false) {
     let leftWall = this.slopeDir > 0;
-    if (this.slopeFlipY) leftWall = !leftWall;
+    if (!this.isSolidBelowSurface(gravityFlipped)) leftWall = !leftWall;
     return leftWall ? "left" : "right";
   }
 }
