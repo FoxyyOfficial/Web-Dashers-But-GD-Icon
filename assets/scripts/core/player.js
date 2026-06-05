@@ -42,6 +42,8 @@ class PlayerState {
     this.slopeVelocity = 0;
     this.currentSlopeAngle = 0;
     this.currentSlopeDir = 1;
+    this.currentSlopeExitX = 0;
+    this.currentSlopeUphill = false;
     this.lastSlopeAngle = 0;
     this.slopeExitGrace = 0;
     this.slopeExitRotationTarget = null;
@@ -2530,10 +2532,74 @@ _updateWaveJump() {
           const _0xLandBot = (this.p.yVelocity <= 0 || this.p.onGround) && (_0x146a97 >= bottom || _0x869e42 >= bottom);
           const _0xLandTop = (this.p.yVelocity >= 0 || this.p.onGround) && (_0x3e7199 <= top || _0x135a9d <= top);
           const isstandingOnAPlatform = this.p.gravityFlipped ? _0xLandTop : _0xLandBot;
+          if (this.p.isFlying && iscolliding && !isstandingOnAPlatform && pieceWidth + playerSize - 5 > left && pieceWidth - playerSize + 5 < right) {
+            const _shipSolidSize = playerSize * 0.55;
+            const _shipBot = playersY - _shipSolidSize + gamemodeAddition;
+            const _lastShipBot = playersLastY - _shipSolidSize + gamemodeAddition;
+            const _shipTop = playersY + _shipSolidSize - gamemodeAddition;
+            const _lastShipTop = playersLastY + _shipSolidSize - gamemodeAddition;
+            if (!this.p.gravityFlipped && (_shipBot >= bottom || _lastShipBot >= bottom)) {
+              this.p.y += (bottom + _shipSolidSize - this.p.y) * 0.45;
+              this.p.yVelocity *= 0.72;
+              _0x30410f = true;
+              this.p.collideBottom = bottom;
+              continue;
+            }
+            if (this.p.gravityFlipped && (_shipTop <= top || _lastShipTop <= top)) {
+              this.p.y += (top - _shipSolidSize - this.p.y) * 0.45;
+              this.p.yVelocity *= 0.72;
+              _0x30410f = true;
+              this.p.onCeiling = true;
+              this.p.collideTop = top;
+              continue;
+            }
+          }
           if (iscolliding && !isstandingOnAPlatform) {
+            const _usesFlightSlopeResolve = this.p.isFlying || this.p.isWave || this.p.isBird || this.p.isDart;
+            const _nearShipSlopeExit = _usesFlightSlopeResolve && this.p.slopeExitGrace > 0 &&
+              Math.abs(pieceWidth - this.p.currentSlopeExitX) < 55;
+            const _nearShipSlope = _usesFlightSlopeResolve && _0x198534.some(_nearObj =>
+              _nearObj.type === slopeType &&
+              pieceWidth + playerSize > _nearObj.x - _nearObj.w / 2 - 70 &&
+              pieceWidth - playerSize < _nearObj.x + _nearObj.w / 2 + 70 &&
+              playersY + playerSize > _nearObj.y - _nearObj.h / 2 - 45 &&
+              playersY - playerSize < _nearObj.y + _nearObj.h / 2 + 45
+            );
+            if (_nearShipSlopeExit || _nearShipSlope) {
+              const _shipSolidSize = playerSize * 0.95;
+              const _nearSlopeObj = _0x198534.find(_nearObj =>
+                _nearObj.type === slopeType &&
+                pieceWidth + playerSize > _nearObj.x - _nearObj.w / 2 - 70 &&
+                pieceWidth - playerSize < _nearObj.x + _nearObj.w / 2 + 70 &&
+                playersY + playerSize > _nearObj.y - _nearObj.h / 2 - 45 &&
+                playersY - playerSize < _nearObj.y + _nearObj.h / 2 + 45
+              );
+              const _slopeSampleX = _nearSlopeObj
+                ? Math.max(_nearSlopeObj.x - _nearSlopeObj.w / 2, Math.min(_nearSlopeObj.x + _nearSlopeObj.w / 2, pieceWidth))
+                : pieceWidth;
+              const _nearSlopeY = _nearSlopeObj ? _nearSlopeObj.getSlopeSurfaceY(_slopeSampleX) : null;
+              const _nearSlopeUpsideDown = _nearSlopeObj ? (this.p.gravityFlipped !== (_nearSlopeObj.slopeFlipY || false)) : this.p.gravityFlipped;
+              const _targetY = _nearSlopeY !== null
+                ? (_nearSlopeUpsideDown ? _nearSlopeY - _shipSolidSize : _nearSlopeY + _shipSolidSize)
+                : (this.p.gravityFlipped ? top - _shipSolidSize : bottom + _shipSolidSize);
+              this.p.y = _targetY;
+              this.p.yVelocity *= 0.45;
+              _0x30410f = true;
+              if (this.p.gravityFlipped) {
+                this.p.onCeiling = true;
+                this.p.collideTop = top;
+              } else {
+                this.p.collideBottom = bottom;
+              }
+              continue;
+            }
             if (window.noClip) this.p.diedThisFrame = true;
-            if (gameObj.h <= 4 || gameObj.w <= 4) continue;
-            if (window.noClip || gameObj.objid === 143) continue;
+            // Previously skipped very thin objects and certain IDs which caused walls to be passable.
+            // Remove those early continues so all solid objects are treated as collidable.
+            // No longer skip based on size or objid.
+            // Keep noClip handling for death bypass.
+            // if (gameObj.h <= 4 || gameObj.w <= 4) continue;
+            // if (window.noClip || gameObj.objid === 143) continue;
             this._lastDeathReason = { reason: "solid-side", objid: gameObj.objid, type: gameObj.type, playerX: pieceWidth, playerY: playersY, objX: gameObj.x, objY: gameObj.y, left, right, top, bottom };
             this.killPlayer();
             return;
@@ -2608,15 +2674,20 @@ _updateWaveJump() {
           if (pieceWidth + playerSize - 5 > left && pieceWidth - playerSize + 5 < right) {
             const _surfY = gameObj.getSlopeSurfaceY(pieceWidth);
             if (_surfY === null) continue;
+            const _usesFlightSlopeResolve = this.p.isFlying || this.p.isWave || this.p.isBird || this.p.isDart;
+            const _canSnapToSlope = !this.p.isUfo;
             const _slopeAngleRad = (gameObj.slopeAngleDeg || 45) * Math.PI / 180;
-            const _playerRadOnSlope = playerSize / Math.cos(_slopeAngleRad);
+            const _slopeHitSize = _usesFlightSlopeResolve ? playerSize * 0.95 : playerSize;
+            const _playerRadOnSlope = _slopeHitSize / Math.cos(_slopeAngleRad);
             const _slopeFloorTop = gameObj.slopeFlipY || false;
             const _upsideDown = this.p.gravityFlipped;
             const _slopeUpsideDown = _upsideDown !== _slopeFloorTop;
             if (!_slopeUpsideDown) {
               const _playerBot = playersY - _playerRadOnSlope + gamemodeAddition;
               const _lastBot = playersLastY - _playerRadOnSlope + gamemodeAddition;
-              if ((_playerBot >= _surfY || _lastBot >= _surfY) && (this.p.yVelocity <= 0 || this.p.onGround || this.p.isFlying || this.p.isWave || this.p.isBird || this.p.isDart)) {
+              const _flightEscapingFloorSlope = this.p.isFlying && this.p.upKeyDown && _playerBot < _surfY - 2 && _lastBot < _surfY - 2;
+              const _slopeStickyGrace = !_usesFlightSlopeResolve && this.p.slopeExitGrace > 0;
+              if (_canSnapToSlope && !_flightEscapingFloorSlope && (_playerBot >= _surfY || _lastBot >= _surfY) && (this.p.yVelocity <= 0 || this.p.onGround || _usesFlightSlopeResolve || _slopeStickyGrace)) {
                 const _targetY = _surfY + _playerRadOnSlope;
                 const _distY = Math.abs(_targetY - playersY);
                 if (!_floorSlopeHit || _distY < _floorSlopeHit.distY || (_distY === _floorSlopeHit.distY && _surfY > _floorSlopeHit.surfY)) {
@@ -2627,7 +2698,9 @@ _updateWaveJump() {
             } else {
               const _playerTop = playersY + _playerRadOnSlope - gamemodeAddition;
               const _lastTop = playersLastY + _playerRadOnSlope - gamemodeAddition;
-              if ((_playerTop <= _surfY || _lastTop <= _surfY) && (this.p.yVelocity >= 0 || this.p.onGround || this.p.isFlying || this.p.isWave || this.p.isBird || this.p.isDart)) {
+              const _flightEscapingCeilingSlope = this.p.isFlying && !this.p.upKeyDown && _playerTop > _surfY + 2 && _lastTop > _surfY + 2;
+              const _slopeStickyGrace = !_usesFlightSlopeResolve && this.p.slopeExitGrace > 0;
+              if (_canSnapToSlope && !_flightEscapingCeilingSlope && (_playerTop <= _surfY || _lastTop <= _surfY) && (this.p.yVelocity >= 0 || this.p.onGround || _usesFlightSlopeResolve || _slopeStickyGrace)) {
                 const _targetY = _surfY - _playerRadOnSlope;
                 const _distY = Math.abs(_targetY - playersY);
                 if (!_ceilingSlopeHit || _distY < _ceilingSlopeHit.distY || (_distY === _ceilingSlopeHit.distY && _surfY < _ceilingSlopeHit.surfY)) {
@@ -2642,6 +2715,18 @@ _updateWaveJump() {
               const _inside = _slopeUpsideDown ? (playersY + 9 > _surfY) : (playersY - 9 < _surfY);
               if (_inside) {
                 if (window.noClip) { this.p.diedThisFrame = true; continue; }
+                if (_usesFlightSlopeResolve) {
+                  const _targetY = _slopeUpsideDown ? _surfY - _playerRadOnSlope : _surfY + _playerRadOnSlope;
+                  const _distY = Math.abs(_targetY - playersY);
+                  if (_slopeUpsideDown) {
+                    if (!_ceilingSlopeHit || _distY < _ceilingSlopeHit.distY) {
+                      _ceilingSlopeHit = { obj: gameObj, surfY: _surfY, playerRad: _playerRadOnSlope, angle: _slopeAngleRad, distY: _distY };
+                    }
+                  } else if (!_floorSlopeHit || _distY < _floorSlopeHit.distY) {
+                    _floorSlopeHit = { obj: gameObj, surfY: _surfY, playerRad: _playerRadOnSlope, angle: _slopeAngleRad, distY: _distY };
+                  }
+                  continue;
+                }
                 // Only non-flying modes die from inside-slope collision
                 if (!this.p.isFlying && !this.p.isShip && !this.p.isWave && !this.p.isBird && !this.p.isDart) {
                   _slopeDeath = { reason: "slope-inside", objid: gameObj.objid, type: gameObj.type, playerX: pieceWidth, playerY: playersY, objX: gameObj.x, objY: gameObj.y, left, right, top, bottom, surfY: _surfY };
@@ -2655,26 +2740,48 @@ _updateWaveJump() {
 
     if (_floorSlopeHit) {
       const gameObj = _floorSlopeHit.obj;
-      this.p.y = _floorSlopeHit.surfY + _floorSlopeHit.playerRad;
-      this.hitGround();
+      const _targetSlopeY = _floorSlopeHit.surfY + _floorSlopeHit.playerRad;
+      const _usesFlightSlopeResolve = this.p.isFlying || this.p.isWave || this.p.isBird || this.p.isDart;
+      if (_usesFlightSlopeResolve) {
+        const _exitX = this.p.mirrored ? gameObj.x - gameObj.w / 2 : gameObj.x + gameObj.w / 2;
+        const _exitFade = Math.max(0.12, Math.min(1, Math.abs(_exitX - pieceWidth) / 42));
+        this.p.y = _targetSlopeY;
+        this.p.yVelocity *= 1 - (0.46 * _exitFade);
+      } else {
+        this.p.y = _targetSlopeY;
+        this.hitGround();
+      }
       _0x30410f = true;
       this.p.collideBottom = _floorSlopeHit.surfY;
       this.p.isOnSlope = true;
       this.p.currentSlopeAngle = _floorSlopeHit.angle;
       this.p.lastSlopeAngle = _floorSlopeHit.angle;
       this.p.currentSlopeDir = gameObj.slopeDir || 1;
+      this.p.currentSlopeExitX = this.p.mirrored ? gameObj.x - gameObj.w / 2 : gameObj.x + gameObj.w / 2;
       this.p.slopeExitGrace = 20;
       const _slopeYVel = (gameObj.h * playerSpeed) / gameObj.w;
       const _slopeVelMult = Math.min(1.12 / Math.max(_floorSlopeHit.angle, 0.01), 1.54);
       const _slopeDir = gameObj.slopeDir || 1;
       const _playerUphill = _slopeDir < 0;
       this.p.slopeVelocity = _slopeVelMult * _slopeYVel * this.flipMod() * (_playerUphill ? -1 : 1);
-      this.stopRotation();
-      if (!this.p.isFlying) this._checkSnapJump(gameObj);
+      this.p.currentSlopeUphill = this.p.slopeVelocity * this.flipMod() > 0;
+      if (!_usesFlightSlopeResolve) {
+        this.stopRotation();
+        this._checkSnapJump(gameObj);
+      }
     } else if (_ceilingSlopeHit) {
       const gameObj = _ceilingSlopeHit.obj;
-      this.p.y = _ceilingSlopeHit.surfY - _ceilingSlopeHit.playerRad;
-      this.hitGround();
+      const _targetSlopeY = _ceilingSlopeHit.surfY - _ceilingSlopeHit.playerRad;
+      const _usesFlightSlopeResolve = this.p.isFlying || this.p.isWave || this.p.isBird || this.p.isDart;
+      if (_usesFlightSlopeResolve) {
+        const _exitX = this.p.mirrored ? gameObj.x - gameObj.w / 2 : gameObj.x + gameObj.w / 2;
+        const _exitFade = Math.max(0.12, Math.min(1, Math.abs(_exitX - pieceWidth) / 42));
+        this.p.y = _targetSlopeY;
+        this.p.yVelocity *= 1 - (0.46 * _exitFade);
+      } else {
+        this.p.y = _targetSlopeY;
+        this.hitGround();
+      }
       _0x30410f = true;
       this.p.onCeiling = true;
       this.p.collideTop = _ceilingSlopeHit.surfY;
@@ -2682,14 +2789,39 @@ _updateWaveJump() {
       this.p.currentSlopeAngle = _ceilingSlopeHit.angle;
       this.p.lastSlopeAngle = _ceilingSlopeHit.angle;
       this.p.currentSlopeDir = gameObj.slopeDir || 1;
+      this.p.currentSlopeExitX = this.p.mirrored ? gameObj.x - gameObj.w / 2 : gameObj.x + gameObj.w / 2;
+      this.p.currentSlopeUphill = true;
       this.p.slopeExitGrace = 20;
-      this.stopRotation();
-      if (!this.p.isFlying) this._checkSnapJump(gameObj);
+      if (!_usesFlightSlopeResolve) {
+        this.stopRotation();
+        this._checkSnapJump(gameObj);
+      }
     } else if (_slopeDeath) {
       this._lastDeathReason = _slopeDeath;
       this.killPlayer();
       return;
     } else if (this.p.wasOnSlope && this.p.slopeExitGrace > 0) {
+      const _nearSlopeExit = this.p.mirrored
+        ? pieceWidth < this.p.currentSlopeExitX + 18
+        : pieceWidth > this.p.currentSlopeExitX - 18;
+      if (this.p.slopeExitGrace === 20 && _nearSlopeExit && this.p.currentSlopeUphill && !this.p.isWave && !this.p.isUfo && !this.p.isSpider) {
+        const _slopeSteepness = Math.max(0.5, Math.min(1.6, (this.p.lastSlopeAngle || Math.PI / 4) / (Math.PI / 4)));
+        const _slopeExitBoost = this.p.isFlying ? 2.8 * _slopeSteepness : 15 * _slopeSteepness;
+        const _boostVel = this.flipMod() * _slopeExitBoost;
+        if (this.p.gravityFlipped) {
+          this.p.yVelocity = Math.min(this.p.yVelocity, _boostVel);
+        } else {
+          this.p.yVelocity = Math.max(this.p.yVelocity, _boostVel);
+        }
+        this.p.onGround = false;
+        if (!this.p.isFlying && !this.p.isBall) {
+          this.rotateActionActive = true;
+          this.rotateActionTime = 0;
+          this.rotateActionDuration = 0.16;
+          this.rotateActionStart = this._rotation;
+          this.rotateActionTotal = -Math.PI / 2 * this.flipMod();
+        }
+      }
       this.p.slopeExitGrace--;
     }
     if (this.p.collideTop !== 0 && this.p.collideBottom !== 0) {

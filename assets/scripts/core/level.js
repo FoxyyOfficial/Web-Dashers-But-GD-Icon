@@ -1271,34 +1271,38 @@ window.LevelObject = class LevelObject {
       const w = objectDef.gridW * a;
       const h = objectDef.gridH * a;
       if (_SLOPE_DATA[levelObj.id]) {
-        let _fx = levelObj.flipX || false;
-        let _fy = levelObj.flipY || false;
-        const _nr = ((Math.round(levelObj.rot || 0) % 360) + 360) % 360;
-        if (_nr === 90) { const _t = _fx; _fx = !_fy; _fy = _t; }
-        else if (_nr === 180) { _fx = !_fx; _fy = !_fy; }
-        else if (_nr === 270) { const _t = _fx; _fx = _fy; _fy = !_t; }
-        const _slopeDir = _fx ? -1 : 1;
-        const _coveredBySlope = this.objects.some(col =>
-          col.type === slopeType &&
-          Math.abs(col.x - worldX) < 0.01 &&
-          Math.abs(col.y - worldY) < 0.01 &&
-          col.slopeDir === _slopeDir &&
-          col.slopeFlipY === _fy &&
-          col.w >= w - 1 &&
-          col.h >= h - 1
-        );
-        if (!_coveredBySlope) {
-          let _slopeCol = new Collider(slopeType, worldX, worldY, w, h, levelObj.rot || 0);
-          _slopeCol.slopeDir = _slopeDir;
-          _slopeCol.slopeFlipY = _fy;
-          _slopeCol.slopeFloorTop = _fy;
-          _slopeCol.slopeAngleDeg = _SLOPE_DATA[levelObj.id].angle || 45;
-          _slopeCol.slopeIsFilled = _SLOPE_DATA[levelObj.id].sq || false;
-          _slopeCol.objid = levelObj.id;
-          registerCollider(_slopeCol);
-          this.objects.push(_slopeCol);
-          hasCollisionEntry = true;
-          this._addCollisionToSection(_slopeCol);
+        // Ensure slope collider is created only once per level object to avoid jitter
+        if (!levelObj._slopeCreated) {
+          let _fx = levelObj.flipX || false;
+          let _fy = levelObj.flipY || false;
+          const _nr = ((Math.round(levelObj.rot || 0) % 360) + 360) % 360;
+          if (_nr === 90) { const _t = _fx; _fx = !_fy; _fy = _t; }
+          else if (_nr === 180) { _fx = !_fx; _fy = !_fy; }
+          else if (_nr === 270) { const _t = _fx; _fx = _fy; _fy = !_t; }
+          const _slopeDir = _fx ? -1 : 1;
+          const _coveredBySlope = this.objects.some(col =>
+            col.type === slopeType &&
+            Math.abs(col.x - worldX) < 0.01 &&
+            Math.abs(col.y - worldY) < 0.01 &&
+            col.slopeDir === _slopeDir &&
+            col.slopeFlipY === _fy &&
+            col.w >= w - 1 &&
+            col.h >= h - 1
+          );
+          if (!_coveredBySlope) {
+            let _slopeCol = new Collider(slopeType, worldX, worldY, w, h, levelObj.rot || 0);
+            _slopeCol.slopeDir = _slopeDir;
+            _slopeCol.slopeFlipY = _fy;
+            _slopeCol.slopeFloorTop = _fy;
+            _slopeCol.slopeAngleDeg = _SLOPE_DATA[levelObj.id].angle || 45;
+            _slopeCol.slopeIsFilled = _SLOPE_DATA[levelObj.id].sq || false;
+            _slopeCol.objid = levelObj.id;
+            registerCollider(_slopeCol);
+            this.objects.push(_slopeCol);
+            hasCollisionEntry = true;
+            this._addCollisionToSection(_slopeCol);
+            levelObj._slopeCreated = true; // mark as created
+          }
         }
       } else {
         const collider = new Collider(solidType, worldX, worldY, w, h, levelObj.rot || 0);
