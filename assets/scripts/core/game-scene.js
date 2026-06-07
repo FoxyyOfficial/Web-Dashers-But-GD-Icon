@@ -4267,12 +4267,12 @@ _buildSettingsPopup() {
             (v) => window.solidWave = v
         );
         
-        createToggle(container, column1X, startY + (spacingY * 6), "Create Object ID labels", 
+        createToggle(container, column2X, startY + (spacingY * 1), "Create Object IDs", 
             () => window.createObjectIds, 
             (v) => window.createObjectIds = v
         );
 
-        createToggle(container, column1X, startY + (spacingY * 7), "Show Object ID labels", 
+        createToggle(container, column2X, startY + (spacingY * 2), "Show Object IDs", 
             () => window.showObjectIds, 
             (v) => window.showObjectIds = v
         );
@@ -8650,7 +8650,7 @@ _applyMirrorEffect() {
     const playerScreenY = b(this._state.y) + this._cameraY;
     const ARROW_DISTANCE = 64;
     const gravityDirection = this._state.gravityFlipped ? -1 : 1;
-    const arrowX = playerScreenX;
+    const arrowX = this._getMirrorXOffset(playerScreenX);
     const arrowY = playerScreenY + (ARROW_DISTANCE * gravityDirection);
 
     this._gravityArrow.setPosition(arrowX, arrowY);
